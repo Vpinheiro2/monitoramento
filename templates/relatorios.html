@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+<div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
+        📊 Relatórios do Sistema
+    </h1>
+    <p style="color: #64748b;">Gere relatórios personalizados com filtros específicos</p>
+</div>
+
+<div class="grid grid-2">
+    {% for id_rel, relatorio in relatorios.items() %}
+    {% if relatorio.ativo %}
+    <div class="card" style="margin: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div>
+                <h3 style="color: var(--primary); margin-bottom: 0.5rem;">{{ relatorio.nome }}</h3>
+                <p style="color: #64748b; font-size: 0.9rem;">{{ relatorio.descricao }}</p>
+            </div>
+            <span class="badge badge-info">{{ relatorio.tipo | capitalize }}</span>
+        </div>
+
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <strong style="display: block; margin-bottom: 0.5rem;">📋 Campos incluídos:</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for campo in relatorio.campos %}
+                <span class="badge badge-secondary">{{ campo.nome }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button onclick="openRelatorioModal('{{ id_rel }}')" class="btn btn-primary" style="width: 100%;">
+            📊 Gerar Relatório
+        </button>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Modal Gerar Relatório -->
+<div id="relatorioModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 700px; width: 95%; margin: 2rem auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 id="relModalTitle" style="font-size: 1.5rem; color: var(--primary); margin: 0;">📊 Gerar Relatório</h2>
+            <span onclick="closeRelatorioModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+        
+        <form method="POST" action="{{ url_for('gerar_relatorio') }}">
+            <input type="hidden" name="id_relatorio" id="relIdInput">
+            
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">🔍 Filtros</h3>
+                <div id="filtrosContainer"></div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">📄 Formato de Exportação</h3>
+                <div id="formatosContainer"></div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="closeRelatorioModal()" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
+                <button type="submit" class="btn btn-success">
+                    ✅ Gerar Relatório
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const relatoriosData = {{ relatorios | tojson | safe }};
+const equipamentosData = {{ equipamentos | tojson | safe }};
+
+function openRelatorioModal(idRelatorio) {
+    const relatorio = relatoriosData[idRelatorio];
+    if (!relatorio) return;
+    
+    document.getElementById('relModalTitle').textContent = `📊 ${relatorio.nome}`;
+    document.getElementById('relIdInput').value = idRelatorio;
+    
+    // Monta filtros
+    const filtrosContainer = document.getElementById('filtrosContainer');
+    filtrosContainer.innerHTML = '';
+    
+    relatorio.filtros.forEach(filtro => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        
+        let inputHtml = '';
+        if (filtro.tipo === 'date') {
+            inputHtml = `<input type="date" name="filtro_${filtro.nome}" class="form-control">`;
+        } else if (filtro.tipo === 'select') {
+            inputHtml = `<select name="filtro_${filtro.nome}" class="form-control">
+                <option value="">Todos</option>`;
+            if (filtro.nome === 'equipamento_id') {
+                equipamentosData.forEach(eq => {
+                    inputHtml += `<option value="${eq.id}">${eq.nome}</option>`;
+                });
+            }
+            inputHtml += `</select>`;
+        } else {
+            inputHtml = `<input type="text" name="filtro_${filtro.nome}" class="form-control" placeholder="${filtro.label}">`;
+        }
+        
+        div.innerHTML = `
+            <label class="form-label">${filtro.label}</label>
+            ${inputHtml}
+        `;
+        filtrosContainer.appendChild(div);
+    });
+    
+    // Monta formatos
+    const formatosContainer = document.getElementById('formatosContainer');
+    formatosContainer.innerHTML = '';
+    
+    relatorio.formatos.forEach(formato => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;';
+        
+        let icon = '📄';
+        if (formato === 'excel') icon = '📊';
+        if (formato === 'pdf') icon = '📕';
+        if (formato === 'csv') icon = '📋';
+        
+        label.innerHTML = `
+            <input type="radio" name="formato" value="${formato}" required>
+            <span>${icon} ${formato.toUpperCase()}</span>
+        `;
+        formatosContainer.appendChild(label);
+    });
+    
+    document.getElementById('relatorioModal').style.display = 'flex';
+}
+
+function closeRelatorioModal() {
+    document.getElementById('relatorioModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target.id === 'relatorioModal') {
+        closeRelatorioModal();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Equipamentos - TI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .icon-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .icon-option {
+        font-size: 2rem;
+        padding: 0.5rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .icon-option:hover {
+        border-color: var(--primary);
+        background: #f0f9ff;
+        transform: scale(1.1);
+    }
+    
+    .icon-option.selected {
+        border-color: var(--primary);
+        background: #e0f2fe;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 800px;
+        width: 95%;
+        margin: 2rem auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
+            🏭 Gerenciamento de Equipamentos
+        </h1>
+        <p style="color: #64748b;">
+            <a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar para TI</a>
+        </p>
+    </div>
+    <button onclick="openAddModal()" class="btn btn-success">
+        ➕ Novo Equipamento
+    </button>
+</div>
+
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--primary); color: white;">
+            <tr>
+                <th style="padding: 1rem; text-align: left;">ID</th>
+                <th style="padding: 1rem; text-align: left;">Ícone</th>
+                <th style="padding: 1rem; text-align: left;">Nome</th>
+                <th style="padding: 1rem; text-align: left;">Tipo</th>
+                <th style="padding: 1rem; text-align: left;">Localização</th>
+                <th style="padding: 1rem; text-align: left;">Status</th>
+                <th style="padding: 1rem; text-align: left;">Sensor</th>
+                <th style="padding: 1rem; text-align: left;">Ativo</th>
+                <th style="padding: 1rem; text-align: left;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for equip in equipamentos %}
+            <tr style="border-bottom: 1px solid #e2e8f0; {% if not equip.get('ativo', True) %}opacity: 0.5;{% endif %}">
+                <td style="padding: 1rem;">{{ equip.id }}</td>
+                <td style="padding: 1rem; font-size: 2rem;">{{ equip.icone }}</td>
+                <td style="padding: 1rem;">
+                    <strong>{{ equip.nome }}</strong>
+                    {% if equip.descricao %}
+                    <br><small style="color: #64748b;">{{ equip.descricao[:40] }}...</small>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    <span class="badge badge-info">{{ equip.tipo | capitalize }}</span>
+                </td>
+                <td style="padding: 1rem;">
+                    <small style="color: #64748b;">{{ equip.localizacao or 'Não definido' }}</small>
+                </td>
+                <td style="padding: 1rem;">
+                    {% if equip.status == 'livre' %}
+                        <span class="badge badge-success">✅ Livre</span>
+                    {% elif equip.status == 'ocupada' %}
+                        <span class="badge badge-danger">🔴 Ocupada</span>
+                    {% elif equip.status == 'manutencao' %}
+                        <span class="badge badge-warning">🔧 Manutenção</span>
+                    {% elif equip.status == 'higienizacao' %}
+                        <span class="badge badge-info">🧼 Higienização</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    {% if equip.sensor and equip.sensor.ativo %}
+                        <span class="badge badge-success">🌡️ Sim</span>
+                        <br><small style="color: #64748b;">Canal {{ equip.sensor.canal }}</small>
+                    {% else %}
+                        <span class="badge badge-secondary">❌ Não</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    {% if equip.get('ativo', True) %}
+                        <span class="badge badge-success">✅ Sim</span>
+                    {% else %}
+                        <span class="badge badge-secondary">❌ Não</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button onclick="editEquip({{ equip.id }})" class="btn btn-primary" style="padding: 0.5rem 0.75rem;">
+                            ✏️
+                        </button>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="acao" value="ativar_desativar">
+                            <input type="hidden" name="equip_id" value="{{ equip.id }}">
+                            <button type="submit" class="btn btn-warning" style="padding: 0.5rem 0.75rem;">
+                                {% if equip.get('ativo', True) %}🔒{% else %}🔓{% endif %}
+                            </button>
+                        </form>
+                        <button onclick="deleteEquip({{ equip.id }}, '{{ equip.nome }}')" class="btn btn-danger" style="padding: 0.5rem 0.75rem;">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Adicionar/Editar -->
+<div id="equipModal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 id="modalTitle" style="color: var(--primary); margin: 0;">➕ Novo Equipamento</h2>
+            <span onclick="closeModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+        
+        <form method="POST" id="equipForm">
+            <input type="hidden" name="acao" id="formAcao" value="adicionar">
+            <input type="hidden" name="equip_id" id="formEquipId">
+            
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">📝 Informações Básicas</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Nome *</label>
+                    <input type="text" name="nome" id="formNome" class="form-control" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Tipo *</label>
+                        <select name="tipo" id="formTipo" class="form-control" required onchange="updateIcons()">
+                            <option value="">Selecione...</option>
+                            <option value="estufa">Estufa</option>
+                            <option value="autoclave">Autoclave</option>
+                            <option value="reator">Reator</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Localização</label>
+                        <input type="text" name="localizacao" id="formLocalizacao" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descrição</label>
+                    <textarea name="descricao" id="formDescricao" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">🎨 Ícone</h3>
+                <input type="hidden" name="icone" id="formIcone" value="📦">
+                <div class="icon-selector" id="iconSelector"></div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;">
+                    <input type="checkbox" name="tem_sensor" id="formTemSensor" onchange="toggleSensor()">
+                    <strong>🌡️ Possui sensor de temperatura</strong>
+                </label>
+                
+                <div id="sensorFields" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">IP *</label>
+                            <input type="text" name="sensor_ip" id="formSensorIp" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Porta *</label>
+                            <input type="text" name="sensor_porta" id="formSensorPorta" class="form-control" value="80">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Canal *</label>
+                            <input type="text" name="sensor_canal" id="formSensorCanal" class="form-control">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Temp. Mínima (°C)</label>
+                            <input type="number" name="temp_min" id="formTempMin" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Temp. Máxima (°C)</label>
+                            <input type="number" name="temp_max" id="formTempMax" class="form-control">
+                        </div>
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; cursor: pointer;">
+                        <input type="checkbox" name="alerta_ativo" id="formAlertaAtivo">
+                        <span>Enviar alertas quando ultrapassar limites</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="submit" class="btn btn-success" id="submitBtn">✅ Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const equipamentosData = {{ equipamentos | tojson | safe }};
+const iconesDisponiveis = {{ icones_disponiveis | tojson | safe }};
+
+function updateIcons() {
+    const tipo = document.getElementById('formTipo').value;
+    const iconSelector = document.getElementById('iconSelector');
+    iconSelector.innerHTML = '';
+    
+    if (tipo && iconesDisponiveis[tipo]) {
+        iconesDisponiveis[tipo].forEach(icone => {
+            const div = document.createElement('div');
+            div.className = 'icon-option';
+            div.textContent = icone;
+            div.onclick = () => {
+                document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+                document.getElementById('formIcone').value = icone;
+            };
+            iconSelector.appendChild(div);
+        });
+        
+        if (iconSelector.firstChild) {
+            iconSelector.firstChild.click();
+        }
+    }
+}
+
+function toggleSensor() {
+    document.getElementById('sensorFields').style.display = 
+        document.getElementById('formTemSensor').checked ? 'block' : 'none';
+}
+
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = '➕ Novo Equipamento';
+    document.getElementById('formAcao').value = 'adicionar';
+    document.getElementById('submitBtn').textContent = '✅ Adicionar';
+    document.getElementById('equipForm').reset();
+    document.getElementById('sensorFields').style.display = 'none';
+    document.getElementById('iconSelector').innerHTML = '';
+    document.getElementById('equipModal').classList.add('active');
+}
+
+function editEquip(id) {
+    const equip = equipamentosData.find(e => e.id === id);
+    if (!equip) return;
+    
+    document.getElementById('modalTitle').textContent = '✏️ Editar Equipamento';
+    document.getElementById('formAcao').value = 'editar';
+    document.getElementById('submitBtn').textContent = '💾 Salvar';
+    document.getElementById('formEquipId').value = equip.id;
+    document.getElementById('formNome').value = equip.nome;
+    document.getElementById('formTipo').value = equip.tipo;
+    document.getElementById('formLocalizacao').value = equip.localizacao || '';
+    document.getElementById('formDescricao').value = equip.descricao || '';
+    document.getElementById('formIcone').value = equip.icone;
+    
+    updateIcons();
+    setTimeout(() => {
+        document.querySelectorAll('.icon-option').forEach(el => {
+            if (el.textContent === equip.icone) el.click();
+        });
+    }, 100);
+    
+    if (equip.sensor && equip.sensor.ativo) {
+        document.getElementById('formTemSensor').checked = true;
+        document.getElementById('formSensorIp').value = equip.sensor.ip || '';
+        document.getElementById('formSensorPorta').value = equip.sensor.porta || '80';
+        document.getElementById('formSensorCanal').value = equip.sensor.canal || '';
+        document.getElementById('formTempMin').value = equip.sensor.temp_min || '';
+        document.getElementById('formTempMax').value = equip.sensor.temp_max || '';
+        document.getElementById('formAlertaAtivo').checked = equip.sensor.alerta_ativo || false;
+        toggleSensor();
+    }
+    
+    document.getElementById('equipModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('equipModal').classList.remove('active');
+}
+
+function deleteEquip(id, nome) {
+    if (confirm(`⚠️ Confirma a exclusão de "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="acao" value="excluir">
+            <input type="hidden" name="equip_id" value="${id}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+window.onclick = function(event) {
+    if (event.target.id === 'equipModal') {
+        closeModal();
+    }
+}
+
+// Auto-abrir modal se URL tiver #novo
+if (window.location.hash === '#novo') {
+    openAddModal();
+}
+</script>
+{% endblock %}

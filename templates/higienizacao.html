@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Higienização{% endblock %}
+
+{% block content %}
+<div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">🧼 Controle de Higienização</h1>
+    <p style="color: #64748b;">Gerencie a higienização dos equipamentos</p>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Equipamentos</h2>
+    
+    <div class="grid grid-2">
+        {% for equip in equipamentos %}
+        <div class="card" style="margin: 0;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 3rem;">{{ equip.icone }}</div>
+                <div>
+                    <h3 style="margin: 0;">{{ equip.nome }}</h3>
+                    {% if equip.status == 'livre' %}
+                        <span class="badge badge-success">Livre</span>
+                    {% elif equip.status == 'ocupada' %}
+                        <span class="badge badge-danger">Ocupada</span>
+                    {% elif equip.status == 'manutencao' %}
+                        <span class="badge badge-warning">Manutenção</span>
+                    {% elif equip.status == 'higienizacao' %}
+                        <span class="badge badge-info">Higienização</span>
+                    {% else %}
+                        <span class="badge badge-secondary">{{ equip.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if equip.status == 'higienizacao' %}
+            <div style="background: #dbeafe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <p><strong>Previsão:</strong> {{ equip.higienizacao.previsao }}</p>
+                <p><strong>Responsável:</strong> {{ equip.higienizacao.responsavel }}</p>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="acao" value="finalizar">
+                <input type="hidden" name="equip_id" value="{{ equip.id }}">
+                <button type="submit" 
+                        class="btn btn-success" 
+                        style="width: 100%;"
+                        onclick="return confirm('Confirma a finalização da higienização? O equipamento será enviado para análise da qualidade.')">
+                    ✅ Finalizar Higienização
+                </button>
+            </form>
+            {% else %}
+            <button onclick="iniciarHigienizacao({{ equip.id }}, '{{ equip.nome }}')" 
+                    class="btn btn-info"
+                    style="width: 100%;"
+                    {% if equip.status in ['ocupada', 'manutencao'] %}disabled{% endif %}>
+                🧼 Iniciar Higienização
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Iniciar Higienização -->
+<div id="higienizacaoModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.5rem; color: var(--primary); margin: 0;">🧼 Iniciar Higienização</h2>
+            <span onclick="closeModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+        
+        <form method="POST">
+            <input type="hidden" name="acao" value="iniciar">
+            <input type="hidden" name="equip_id" id="hig_equip_id">
+            
+            <div class="form-group">
+                <label class="form-label">Equipamento</label>
+                <input type="text" 
+                       id="hig_equip_nome"
+                       class="form-control"
+                       readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Previsão de Liberação *</label>
+                <input type="datetime-local" 
+                       name="previsao" 
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="alert alert-info" style="margin-top: 1rem;">
+                <strong>ℹ️ Importante:</strong> Após finalizar a higienização, o equipamento será enviado para análise do setor de qualidade antes de ser liberado.
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-info">
+                    🧼 Iniciar Higienização
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function iniciarHigienizacao(id, nome) {
+        document.getElementById('hig_equip_id').value = id;
+        document.getElementById('hig_equip_nome').value = nome;
+        document.getElementById('higienizacaoModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('higienizacaoModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.id === 'higienizacaoModal') {
+            closeModal();
+        }
+    }
+</script>
+{% endblock %}

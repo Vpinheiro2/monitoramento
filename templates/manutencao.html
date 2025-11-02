@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Controle de Manutenção{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🔧 Controle de Manutenção</h1>
+    <p class="page-description">Gerencie a manutenção dos equipamentos</p>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Equipamentos</h2>
+    
+    <div class="grid grid-2">
+        {% for equip in equipamentos %}
+        <div class="card" style="margin: 0;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 3rem;">{{ equip.icone }}</div>
+                <div>
+                    <h3 style="margin: 0;">{{ equip.nome }}</h3>
+                    <span class="badge badge-{{ get_cor_status(equip.status) }}">
+                        {{ equip.status | capitalize }}
+                    </span>
+                </div>
+            </div>
+
+            {% if equip.status == 'manutencao' %}
+            <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <p><strong>Motivo:</strong> {{ equip.manutencao.motivo }}</p>
+                <p><strong>Previsão:</strong> {{ equip.manutencao.previsao }}</p>
+                <p><strong>Responsável:</strong> {{ equip.manutencao.responsavel }}</p>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="acao" value="finalizar">
+                <input type="hidden" name="equip_id" value="{{ equip.id }}">
+                <button type="submit" 
+                        class="btn btn-success" 
+                        style="width: 100%;"
+                        onclick="return confirm('Confirma a finalização da manutenção?')">
+                    ✅ Finalizar Manutenção
+                </button>
+            </form>
+            {% else %}
+            <button onclick="iniciarManutencao({{ equip.id }}, '{{ equip.nome }}')" 
+                    class="btn btn-warning"
+                    style="width: 100%;"
+                    {% if equip.status in ['ocupada', 'higienizacao'] %}disabled{% endif %}>
+                🔧 Iniciar Manutenção
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Iniciar Manutenção -->
+<div id="manutencaoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">🔧 Iniciar Manutenção</h2>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        
+        <form method="POST">
+            <input type="hidden" name="acao" value="iniciar">
+            <input type="hidden" name="equip_id" id="manut_equip_id">
+            
+            <div class="form-group">
+                <label class="form-label">Equipamento</label>
+                <input type="text" 
+                       id="manut_equip_nome"
+                       class="form-control"
+                       readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label required-label">Motivo da Manutenção</label>
+                <textarea name="motivo" 
+                          class="form-control" 
+                          rows="3"
+                          placeholder="Descreva o motivo da manutenção..."
+                          required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label required-label">Previsão de Liberação</label>
+                <input type="date" 
+                       name="previsao" 
+                       class="form-control"
+                       required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-warning">
+                    🔧 Iniciar Manutenção
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        color: var(--primary);
+    }
+
+    .close-modal {
+        font-size: 2rem;
+        cursor: pointer;
+        color: #94a3b8;
+    }
+
+    .close-modal:hover {
+        color: var(--danger);
+    }
+</style>
+
+<script>
+    function iniciarManutencao(id, nome) {
+        document.getElementById('manut_equip_id').value = id;
+        document.getElementById('manut_equip_nome').value = nome;
+        document.getElementById('manutencaoModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('manutencaoModal').classList.remove('active');
+    }
+
+    window.onclick = function(event) {
+        if (event.target.id === 'manutencaoModal') {
+            closeModal();
+        }
+    }
+</script>
+{% endblock %}

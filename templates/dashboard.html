@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Monitoramento{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        color: white;
+    }
+
+    .dashboard-title {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .dashboard-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .stat-card.livre .stat-value { color: var(--success); }
+    .stat-card.ocupada .stat-value { color: var(--danger); }
+    .stat-card.manutencao .stat-value { color: var(--warning); }
+    .stat-card.higienizacao .stat-value { color: var(--info); }
+
+    .equipamentos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+
+    .equip-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .equip-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+    }
+
+    .equip-card.livre::before { background: var(--success); }
+    .equip-card.ocupada::before { background: var(--danger); }
+    .equip-card.manutencao::before { background: var(--warning); }
+    .equip-card.higienizacao::before { background: var(--info); }
+    .equip-card.offline::before { background: var(--secondary); }
+
+    .equip-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+
+    .equip-icon {
+        font-size: 4rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .equip-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--dark);
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .equip-status {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .status-livre {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-ocupada {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-manutencao {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-higienizacao {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-offline {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .equip-details {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .equip-detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .equip-detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .detail-value {
+        color: var(--dark);
+        font-weight: 600;
+    }
+
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">🏭 Dashboard de Monitoramento</h1>
+    <p class="dashboard-subtitle">Visão Geral em Tempo Real</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card livre">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'livre') | list | length }}</div>
+        <div class="stat-label">Disponíveis</div>
+    </div>
+
+    <div class="stat-card ocupada">
+        <div class="stat-icon pulse">🔴</div>
+        <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'ocupada') | list | length }}</div>
+        <div class="stat-label">Em Processo</div>
+    </div>
+
+    <div class="stat-card manutencao">
+        <div class="stat-icon">🔧</div>
+        <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'manutencao') | list | length }}</div>
+        <div class="stat-label">Em Manutenção</div>
+    </div>
+
+    <div class="stat-card higienizacao">
+        <div class="stat-icon">🧼</div>
+        <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'higienizacao') | list | length }}</div>
+        <div class="stat-label">Em Higienização</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Equipamentos</h2>
+    <div class="equipamentos-grid">
+        {% for equip in equipamentos %}
+        <div class="equip-card {{ equip.status }}">
+            <div class="equip-icon">
+                {% if equip.tipo == 'estufa' %}
+                    🌡️
+                {% elif equip.tipo == 'autoclave' %}
+                    ⚗️
+                {% else %}
+                    🏭
+                {% endif %}
+            </div>
+            
+            <h3 class="equip-name">{{ equip.nome }}</h3>
+            
+            <div class="equip-status">
+                <span class="status-badge status-{{ equip.status }}">
+                    {% if equip.status == 'livre' %}
+                        ✅ Disponível
+                    {% elif equip.status == 'ocupada' %}
+                        🔴 Em Processo
+                    {% elif equip.status == 'manutencao' %}
+                        🔧 Manutenção
+                    {% elif equip.status == 'higienizacao' %}
+                        🧼 Higienização
+                    {% else %}
+                        ⚪ Offline
+                    {% endif %}
+                </span>
+            </div>
+
+            {% if equip.processo %}
+            <div class="equip-details">
+                <div class="equip-detail-item">
+                    <span class="detail-label">Produto:</span>
+                    <span class="detail-value">{{ equip.processo.produto }}</span>
+                </div>
+                <div class="equip-detail-item">
+                    <span class="detail-label">OP:</span>
+                    <span class="detail-value">{{ equip.processo.ordem_producao }}</span>
+                </div>
+                <div class="equip-detail-item">
+                    <span class="detail-label">Duração:</span>
+                    <span class="detail-value">{{ equip.processo.duracao }}</span>
+                </div>
+                <div class="equip-detail-item">
+                    <span class="detail-label">Responsável:</span>
+                    <span class="detail-value">{{ equip.processo.responsavel }}</span>
+                </div>
+            </div>
+            {% elif equip.manutencao %}
+            <div class="equip-details">
+                <div class="equip-detail-item">
+                    <span class="detail-label">Motivo:</span>
+                    <span class="detail-value">{{ equip.manutencao.motivo }}</span>
+                </div>
+                <div class="equip-detail-item">
+                    <span class="detail-label">Previsão:</span>
+                    <span class="detail-value">{{ equip.manutencao.previsao }}</span>
+                </div>
+            </div>
+            {% elif equip.higienizacao %}
+            <div class="equip-details">
+                <div class="equip-detail-item">
+                    <span class="detail-label">Previsão:</span>
+                    <span class="detail-value">{{ equip.higienizacao.previsao }}</span>
+                </div>
+                <div class="equip-detail-item">
+                    <span class="detail-label">Responsável:</span>
+                    <span class="detail-value">{{ equip.higienizacao.responsavel }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="equip-details" style="text-align: center; color: var(--success); font-weight: 600;">
+                Equipamento pronto para uso
+                
+                {% if equip.sensor and equip.sensor.ativo %}
+                <div style="background: #e0f2fe; margin-top: 1rem; padding: 0.75rem; border-radius: 6px;">
+                    <span style="color: #64748b;">🌡️ Temperatura:</span>
+                    <div id="temp-{{ equip.id }}" style="font-size: 1.5rem; font-weight: bold; color: var(--info); margin-top: 0.5rem;">
+                        {% if equip.temperatura_atual %}
+                            {{ equip.temperatura_atual }}ºC
+                        {% else %}
+                            Lendo...
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // Atualizar página a cada 30 segundos (simulação de tempo real)
+    setTimeout(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

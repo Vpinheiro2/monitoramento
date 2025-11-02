@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar {{ equipamento.nome }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
+        <div style="font-size: 5rem;">
+            {% if equipamento.tipo == 'estufa' %}
+                🌡️
+            {% elif equipamento.tipo == 'autoclave' %}
+                ⚗️
+            {% else %}
+                🏭
+            {% endif %}
+        </div>
+        <div>
+            <h1 style="margin: 0;">{{ equipamento.nome }}</h1>
+            {% if equipamento.status == 'livre' %}
+                <span class="badge badge-success">Status: Livre</span>
+            {% elif equipamento.status == 'ocupada' %}
+                <span class="badge badge-danger">Status: Ocupada</span>
+            {% elif equipamento.status == 'manutencao' %}
+                <span class="badge badge-warning">Status: Manutenção</span>
+            {% elif equipamento.status == 'higienizacao' %}
+                <span class="badge badge-info">Status: Higienização</span>
+            {% else %}
+                <span class="badge badge-secondary">Status: {{ equipamento.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if equipamento.processo %}
+    <!-- Equipamento Ocupado -->
+    <h2 class="card-title">📋 Processo Atual</h2>
+    
+    <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <p><strong>Produto:</strong> {{ equipamento.processo.produto }}</p>
+        <p><strong>Ordem de Produção:</strong> {{ equipamento.processo.ordem_producao }}</p>
+        <p><strong>Duração:</strong> {{ equipamento.processo.duracao }}</p>
+        <p><strong>Carregado às:</strong> {{ equipamento.processo.carregado_as }}</p>
+        <p><strong>Responsável:</strong> {{ equipamento.processo.responsavel }}</p>
+        <p><strong>Data de Início:</strong> {{ equipamento.processo.data_inicio }}</p>
+    </div>
+
+    <h3>Editar Processo</h3>
+    <form method="POST">
+        <input type="hidden" name="acao" value="editar">
+        
+        <div class="form-group">
+            <label class="form-label">Produto *</label>
+            <input type="text" 
+                   name="produto" 
+                   class="form-control"
+                   value="{{ equipamento.processo.produto }}"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Ordem de Produção *</label>
+            <input type="text" 
+                   name="ordem_producao" 
+                   class="form-control"
+                   value="{{ equipamento.processo.ordem_producao }}"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Duração (HH:MM) *</label>
+            <input type="time" 
+                   name="duracao" 
+                   class="form-control"
+                   value="{{ equipamento.processo.duracao }}"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Carregado às (HH:MM) *</label>
+            <input type="time" 
+                   name="carregado_as" 
+                   class="form-control"
+                   value="{{ equipamento.processo.carregado_as }}"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Responsável *</label>
+            <input type="text" 
+                   name="responsavel" 
+                   class="form-control"
+                   value="{{ equipamento.processo.responsavel }}"
+                   required>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('operador') }}" class="btn btn-secondary">Voltar</a>
+            <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+        </div>
+    </form>
+
+    <hr style="margin: 2rem 0;">
+
+    <h3>Finalizar Processo</h3>
+    <form method="POST">
+        <input type="hidden" name="acao" value="finalizar">
+        <button type="submit" 
+                class="btn btn-success"
+                onclick="return confirm('Confirma a finalização do processo?')">
+            ✅ Finalizar Processo
+        </button>
+    </form>
+
+    {% else %}
+    <!-- Equipamento Livre -->
+    <h2 class="card-title">🚀 Iniciar Novo Processo</h2>
+    
+    <form method="POST">
+        <input type="hidden" name="acao" value="iniciar">
+        
+        <div class="form-group">
+            <label class="form-label">Produto *</label>
+            <input type="text" 
+                   name="produto" 
+                   class="form-control"
+                   placeholder="Ex: Tomates, Leite, etc."
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Ordem de Produção *</label>
+            <input type="text" 
+                   name="ordem_producao" 
+                   class="form-control"
+                   placeholder="Ex: OP-2024-001"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Duração do Processo (HH:MM) *</label>
+            <input type="time" 
+                   name="duracao" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Carregado às (HH:MM) *</label>
+            <input type="time" 
+                   name="carregado_as" 
+                   class="form-control"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Responsável *</label>
+            <input type="text" 
+                   name="responsavel" 
+                   class="form-control"
+                   value="{{ session.nome_usuario }}"
+                   required>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('operador') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success">▶️ Iniciar Processo</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
