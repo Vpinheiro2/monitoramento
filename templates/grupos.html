@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Grupos{% endblock %}
+
+{% block content %}
+<div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
+        👨‍👩‍👧‍👦 Gerenciamento de Grupos
+    </h1>
+    <p style="color: #64748b;">
+        <a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar para TI</a>
+    </p>
+</div>
+
+<div style="margin-bottom: 2rem;">
+    <button onclick="openAddGrupoModal()" class="btn btn-success">
+        ➕ Criar Novo Grupo
+    </button>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Grupos Cadastrados</h2>
+    
+    <div class="grid grid-3">
+        {% for nome_grupo, grupo in grupos.items() %}
+        <div class="card" style="margin: 0; border-left: 4px solid {{ grupo.cor }};">
+            <h3 style="color: var(--primary); margin-bottom: 0.5rem;">{{ grupo.nome }}</h3>
+            <p style="color: #64748b; margin-bottom: 1rem;">{{ grupo.descricao }}</p>
+            
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <strong style="display: block; margin-bottom: 0.5rem;">Permissões:</strong>
+                {% for perm, valor in grupo.permissoes.items() %}
+                    {% if valor %}
+                    <span class="badge badge-success" style="margin: 0.25rem;">{{ perm }}</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editGrupo('{{ nome_grupo }}')" class="btn btn-primary" style="flex: 1;">
+                    ✏️ Editar
+                </button>
+                <form method="POST" style="flex: 1;">
+                    <input type="hidden" name="acao" value="excluir">
+                    <input type="hidden" name="nome_grupo" value="{{ nome_grupo }}">
+                    <button type="submit" class="btn btn-danger" style="width: 100%;"
+                            onclick="return confirm('Confirma a exclusão do grupo?')">
+                        🗑️ Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Adicionar/Editar Grupo -->
+<div id="grupoModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 id="grupoModalTitle" style="font-size: 1.5rem; color: var(--primary); margin: 0;">➕ Criar Grupo</h2>
+            <span onclick="closeGrupoModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+        
+        <form method="POST">
+            <input type="hidden" name="acao" id="grupoAcao" value="adicionar">
+            
+            <div class="form-group">
+                <label class="form-label">Nome do Grupo *</label>
+                <input type="text" name="nome" id="grupoNome" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Descrição</label>
+                <textarea name="descricao" id="grupoDescricao" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Cor do Grupo</label>
+                <input type="color" name="cor" id="grupoCor" class="form-control" value="#4A90E2">
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" onclick="closeGrupoModal()" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
+                <button type="submit" class="btn btn-success">
+                    ✅ Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const gruposData = {{ grupos | tojson | safe }};
+
+function openAddGrupoModal() {
+    document.getElementById('grupoModalTitle').textContent = '➕ Criar Novo Grupo';
+    document.getElementById('grupoAcao').value = 'adicionar';
+    document.getElementById('grupoNome').value = '';
+    document.getElementById('grupoDescricao').value = '';
+    document.getElementById('grupoCor').value = '#4A90E2';
+    document.getElementById('grupoModal').style.display = 'flex';
+}
+
+function editGrupo(nomeGrupo) {
+    const grupo = gruposData[nomeGrupo];
+    document.getElementById('grupoModalTitle').textContent = '✏️ Editar Grupo';
+    document.getElementById('grupoAcao').value = 'editar';
+    document.getElementById('grupoNome').value = grupo.nome;
+    document.getElementById('grupoDescricao').value = grupo.descricao;
+    document.getElementById('grupoCor').value = grupo.cor;
+    document.getElementById('grupoModal').style.display = 'flex';
+}
+
+function closeGrupoModal() {
+    document.getElementById('grupoModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target.id === 'grupoModal') {
+        closeGrupoModal();
+    }
+}
+</script>
+{% endblock %}

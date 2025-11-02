@@ -62,6 +62,7 @@
     .stat-card.ocupada .stat-value { color: var(--danger); }
     .stat-card.manutencao .stat-value { color: var(--warning); }
     .stat-card.higienizacao .stat-value { color: var(--info); }
+    .stat-card.aguardando .stat-value { color: var(--warning); }
 
     .equipamentos-grid {
         display: grid;
@@ -93,6 +94,7 @@
     .equip-card.manutencao::before { background: var(--warning); }
     .equip-card.higienizacao::before { background: var(--info); }
     .equip-card.offline::before { background: var(--secondary); }
+    .equip-card.aguardando_qualidade::before { background: var(--warning); }
 
     .equip-card:hover {
         transform: translateY(-5px);
@@ -146,6 +148,12 @@
         color: #1e40af;
     }
 
+    .status-aguardando_qualidade {
+        background: #fef3c7;
+        color: #92400e;
+        animation: pulse 2s infinite;
+    }
+
     .status-offline {
         background: #f1f5f9;
         color: #475569;
@@ -187,6 +195,16 @@
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
     }
+    
+    .bloqueado-badge {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 0.75rem;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -220,6 +238,12 @@
         <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'higienizacao') | list | length }}</div>
         <div class="stat-label">Em Higienização</div>
     </div>
+
+    <div class="stat-card aguardando">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ equipamentos | selectattr('status', 'equalto', 'aguardando_qualidade') | list | length }}</div>
+        <div class="stat-label">Aguardando Qualidade</div>
+    </div>
 </div>
 
 <div class="card">
@@ -227,15 +251,7 @@
     <div class="equipamentos-grid">
         {% for equip in equipamentos %}
         <div class="equip-card {{ equip.status }}">
-            <div class="equip-icon">
-                {% if equip.tipo == 'estufa' %}
-                    🌡️
-                {% elif equip.tipo == 'autoclave' %}
-                    ⚗️
-                {% else %}
-                    🏭
-                {% endif %}
-            </div>
+            <div class="equip-icon">{{ equip.icone }}</div>
             
             <h3 class="equip-name">{{ equip.nome }}</h3>
             
@@ -249,6 +265,8 @@
                         🔧 Manutenção
                     {% elif equip.status == 'higienizacao' %}
                         🧼 Higienização
+                    {% elif equip.status == 'aguardando_qualidade' %}
+                        ⏳ Aguardando Validação
                     {% else %}
                         ⚪ Offline
                     {% endif %}
@@ -296,22 +314,14 @@
                     <span class="detail-value">{{ equip.higienizacao.responsavel }}</span>
                 </div>
             </div>
+            {% elif equip.status == 'aguardando_qualidade' %}
+            <div class="bloqueado-badge">
+                ⏳ Aguardando validação do setor de qualidade.<br>
+                <small>Equipamento bloqueado para todos exceto Qualidade</small>
+            </div>
             {% else %}
             <div class="equip-details" style="text-align: center; color: var(--success); font-weight: 600;">
                 Equipamento pronto para uso
-                
-                {% if equip.sensor and equip.sensor.ativo %}
-                <div style="background: #e0f2fe; margin-top: 1rem; padding: 0.75rem; border-radius: 6px;">
-                    <span style="color: #64748b;">🌡️ Temperatura:</span>
-                    <div id="temp-{{ equip.id }}" style="font-size: 1.5rem; font-weight: bold; color: var(--info); margin-top: 0.5rem;">
-                        {% if equip.temperatura_atual %}
-                            {{ equip.temperatura_atual }}ºC
-                        {% else %}
-                            Lendo...
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -320,7 +330,7 @@
 </div>
 
 <script>
-    // Atualizar página a cada 30 segundos (simulação de tempo real)
+    // Atualizar página a cada 30 segundos
     setTimeout(() => {
         location.reload();
     }, 30000);
