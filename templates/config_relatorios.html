@@ -13,6 +13,7 @@
             <tr>
                 <th style="padding: 1rem; text-align: left;">Nome</th>
                 <th style="padding: 1rem; text-align: left;">Tipo</th>
+                <th style="padding: 1rem; text-align: left;">Campos</th>
                 <th style="padding: 1rem; text-align: left;">Formatos</th>
                 <th style="padding: 1rem; text-align: left;">Status</th>
                 <th style="padding: 1rem; text-align: left;">Ações</th>
@@ -22,7 +23,8 @@
             {% for id_rel, rel in relatorios.items() %}
             <tr style="border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 1rem;"><strong>{{ rel.nome }}</strong><br><small style="color: #64748b;">{{ rel.descricao }}</small></td>
-                <td style="padding: 1rem;"><span class="badge badge-info">{{ rel.tipo | capitalize }}</span></td>
+                <td style="padding: 1rem;"><span class="badge badge-info">{% if rel.tipo == 'outro' and rel.tipo_outro %}{{ rel.tipo_outro }}{% else %}{{ rel.tipo | capitalize }}{% endif %}</span></td>
+                <td style="padding: 1rem;"><small style="color: #64748b;">{{ rel.campos | length }} campos</small></td>
                 <td style="padding: 1rem;">{% for formato in rel.formatos %}<span class="badge badge-secondary">{{ formato }}</span> {% endfor %}</td>
                 <td style="padding: 1rem;">{% if rel.ativo %}<span class="badge badge-success">✅ Ativo</span>{% else %}<span class="badge badge-secondary">❌ Inativo</span>{% endif %}</td>
                 <td style="padding: 1rem;">
@@ -37,57 +39,194 @@
         </tbody>
     </table>
 </div>
-<div id="relatorioModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 900px; width: 95%; margin: 2rem auto; max-height: 90vh; overflow-y: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+
+<!-- MODAL COM PREVIEW -->
+<div id="relatorioModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="background: white; max-width: 1400px; width: 95%; margin: 2rem auto; border-radius: 12px; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 2px solid #e2e8f0;">
             <h2 id="relatorioModalTitle" style="font-size: 1.5rem; color: var(--primary); margin: 0;">➕ Criar Relatório</h2>
             <span onclick="closeRelatorioModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
         </div>
-        <form method="POST">
+        
+        <form method="POST" style="flex: 1; overflow-y: auto; display: flex;">
             <input type="hidden" name="acao" id="relAcao" value="adicionar">
-            <input type="hidden" name="id_relatorio" id="relId">
-            <div class="form-group"><label class="form-label">ID *</label><input type="text" name="id_relatorio" id="relIdInput" class="form-control" required></div>
-            <div class="form-group"><label class="form-label">Nome *</label><input type="text" name="nome" id="relNome" class="form-control" required></div>
-            <div class="form-group"><label class="form-label">Descrição</label><textarea name="descricao" id="relDescricao" class="form-control" rows="2"></textarea></div>
-            <div class="form-group"><label class="form-label">Tipo *</label><select name="tipo" id="relTipo" class="form-control" required><option value="">Selecione...</option><option value="processos">Processos</option><option value="equipamentos">Equipamentos</option></select></div>
-            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">📋 Campos *</label>
-            <div style="max-height: 300px; overflow-y: auto; background: white; padding: 1rem; border-radius: 8px;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="equipamento">Equipamento</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="produto">Produto</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="ordem_producao">Ordem Produção</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="responsavel">Responsável</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="data_finalizacao">Data Finalização</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="status_qualidade">Status Qualidade</label>
-            </div></div>
-            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">Formatos *</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="excel">📊 Excel</label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="pdf">📕 PDF</label>
+            
+            <!-- SIDEBAR -->
+            <div style="width: 400px; padding: 1.5rem; border-right: 2px solid #e2e8f0; overflow-y: auto;">
+                <div class="form-group"><label class="form-label">ID *</label><input type="text" name="id_relatorio" id="relIdInput" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Nome *</label><input type="text" name="nome" id="relNome" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Descrição</label><textarea name="descricao" id="relDescricao" class="form-control" rows="2"></textarea></div>
+                <div class="form-group"><label class="form-label">Tipo *</label><select name="tipo" id="relTipo" class="form-control" required onchange="updateCampos()"><option value="">Selecione...</option><option value="processos">Processos</option><option value="equipamentos">Equipamentos</option><option value="manutencao">Manutenção</option><option value="higienizacao">Higienização</option><option value="qualidade">Qualidade</option><option value="operador">Operador</option><option value="outro">Outro</option></select></div>
+                <div id="tipoOutroDiv" style="display: none;" class="form-group"><label class="form-label">Especifique</label><input type="text" name="tipo_outro" id="relTipoOutro" class="form-control"></div>
+                
+                <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <label class="form-label">📋 Campos *</label>
+                    <div id="camposContainer" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                    <label class="form-label">Formatos *</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="excel">📊 Excel</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="pdf">📕 PDF</label>
+                </div>
             </div>
-            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">Layouts</label>
-                <div class="form-group"><label>Layout Excel</label><select name="layout_excel" id="relLayoutExcel" class="form-control"><option value="">Nenhum</option>{% for id, layout in layouts.items() %}{% if layout.tipo == 'excel' %}<option value="{{ id }}">{{ layout.nome }}</option>{% endif %}{% endfor %}</select></div>
-                <div class="form-group"><label>Layout PDF</label><select name="layout_pdf" id="relLayoutPdf" class="form-control"><option value="">Nenhum</option>{% for id, layout in layouts.items() %}{% if layout.tipo == 'pdf' %}<option value="{{ id }}">{{ layout.nome }}</option>{% endif %}{% endfor %}</select></div>
-            </div>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                <button type="button" onclick="closeRelatorioModal()" class="btn btn-secondary">❌ Cancelar</button>
-                <button type="submit" class="btn btn-success">✅ Criar</button>
+            
+            <!-- PREVIEW -->
+            <div style="flex: 1; padding: 1.5rem; overflow-y: auto;">
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">👁️ Preview do Relatório</h3>
+                <div id="previewContainer" style="background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 1rem; min-height: 400px;">
+                    <p style="color: #64748b; text-align: center; padding: 3rem;">Selecione campos para ver o preview</p>
+                </div>
             </div>
         </form>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; padding: 1.5rem; border-top: 2px solid #e2e8f0;">
+            <button type="button" onclick="closeRelatorioModal()" class="btn btn-secondary">❌ Cancelar</button>
+            <button type="button" onclick="document.querySelector('form').submit()" class="btn btn-success">✅ Salvar</button>
+        </div>
     </div>
 </div>
+
 <script>
 const relatoriosData = {{ relatorios | tojson | safe }};
+
+const camposPorTipo = {
+    'processos': [
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'produto', nome: 'Produto'},
+        {id: 'ordem_producao', nome: 'Ordem Produção'},
+        {id: 'responsavel', nome: 'Responsável'},
+        {id: 'data_inicio', nome: 'Data Início'},
+        {id: 'data_finalizacao', nome: 'Data Finalização'},
+        {id: 'duracao', nome: 'Duração'},
+        {id: 'status_qualidade', nome: 'Status Qualidade'},
+        {id: 'observacoes', nome: 'Observações'}
+    ],
+    'manutencao': [
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'tipo_manutencao', nome: 'Tipo Manutenção'},
+        {id: 'motivo', nome: 'Motivo'},
+        {id: 'responsavel', nome: 'Responsável'},
+        {id: 'data_inicio', nome: 'Data Início'},
+        {id: 'previsao_termino', nome: 'Previsão Término'},
+        {id: 'pecas_utilizadas', nome: 'Peças Utilizadas'},
+        {id: 'custo_estimado', nome: 'Custo Estimado'},
+        {id: 'tempo_parada', nome: 'Tempo Parada'},
+        {id: 'status', nome: 'Status'}
+    ],
+    'higienizacao': [
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'tipo_higienizacao', nome: 'Tipo Higienização'},
+        {id: 'responsavel', nome: 'Responsável'},
+        {id: 'data_inicio', nome: 'Data Início'},
+        {id: 'data_termino', nome: 'Data Término'},
+        {id: 'produtos_utilizados', nome: 'Produtos Utilizados'},
+        {id: 'tempo_duracao', nome: 'Tempo Duração'},
+        {id: 'responsavel_qualidade', nome: 'Resp. Qualidade'},
+        {id: 'status_qualidade', nome: 'Status Qualidade'}
+    ],
+    'qualidade': [
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'produto', nome: 'Produto'},
+        {id: 'ordem_producao', nome: 'Ordem Produção'},
+        {id: 'analista', nome: 'Analista'},
+        {id: 'data_analise', nome: 'Data Análise'},
+        {id: 'resultado_analise', nome: 'Resultado'},
+        {id: 'criterios_avaliados', nome: 'Critérios Avaliados'},
+        {id: 'observacoes', nome: 'Observações'},
+        {id: 'acao_corretiva', nome: 'Ação Corretiva'}
+    ],
+    'operador': [
+        {id: 'operador', nome: 'Operador'},
+        {id: 'turno', nome: 'Turno'},
+        {id: 'equipe', nome: 'Equipe'},
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'produto', nome: 'Produto'},
+        {id: 'producao_planejada', nome: 'Produção Planejada'},
+        {id: 'producao_real', nome: 'Produção Real'},
+        {id: 'eficiencia', nome: 'Eficiência %'},
+        {id: 'paradas', nome: 'Paradas'},
+        {id: 'observacoes', nome: 'Observações'}
+    ],
+    'equipamentos': [
+        {id: 'equipamento', nome: 'Equipamento'},
+        {id: 'tipo', nome: 'Tipo'},
+        {id: 'localizacao', nome: 'Localização'},
+        {id: 'status', nome: 'Status'},
+        {id: 'ultima_manutencao', nome: 'Última Manutenção'},
+        {id: 'proxima_manutencao', nome: 'Próxima Manutenção'},
+        {id: 'tempo_operacao', nome: 'Tempo Operação'},
+        {id: 'disponibilidade', nome: 'Disponibilidade %'}
+    ]
+};
+
+function updateCampos() {
+    const tipo = document.getElementById('relTipo').value;
+    const container = document.getElementById('camposContainer');
+    const tipoOutroDiv = document.getElementById('tipoOutroDiv');
+    
+    tipoOutroDiv.style.display = tipo === 'outro' ? 'block' : 'none';
+    
+    if (!tipo || tipo === 'outro') {
+        container.innerHTML = '<p style="color: #64748b;">Selecione um tipo</p>';
+        return;
+    }
+    
+    const campos = camposPorTipo[tipo] || [];
+    container.innerHTML = '';
+    
+    campos.forEach(campo => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; cursor: pointer;';
+        label.innerHTML = `<input type="checkbox" name="campos" value="${campo.id}" onchange="updatePreview()">${campo.nome}`;
+        container.appendChild(label);
+    });
+    
+    updatePreview();
+}
+
+function updatePreview() {
+    const tipo = document.getElementById('relTipo').value;
+    const checkboxes = document.querySelectorAll('input[name="campos"]:checked');
+    const preview = document.getElementById('previewContainer');
+    
+    if (checkboxes.length === 0) {
+        preview.innerHTML = '<p style="color: #64748b; text-align: center; padding: 3rem;">Selecione campos para ver o preview</p>';
+        return;
+    }
+    
+    let html = '<table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0;">';
+    html += '<thead style="background: var(--primary); color: white;"><tr>';
+    
+    checkboxes.forEach(cb => {
+        const campo = camposPorTipo[tipo]?.find(c => c.id === cb.value);
+        if (campo) html += `<th style="padding: 0.75rem; text-align: left; border: 1px solid #e2e8f0;">${campo.nome}</th>`;
+    });
+    
+    html += '</tr></thead><tbody>';
+    
+    for (let i = 0; i < 3; i++) {
+        html += `<tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'};">`;
+        checkboxes.forEach(() => {
+            html += '<td style="padding: 0.5rem; border: 1px solid #e2e8f0;">Exemplo</td>';
+        });
+        html += '</tr>';
+    }
+    
+    html += '</tbody></table>';
+    preview.innerHTML = html;
+}
+
 function openAddRelatorioModal() {
     document.getElementById('relatorioModalTitle').textContent = '➕ Criar Relatório';
     document.getElementById('relAcao').value = 'adicionar';
     document.getElementById('relIdInput').readOnly = false;
-    document.getElementById('relIdInput').value = '';
-    document.getElementById('relNome').value = '';
-    document.getElementById('relDescricao').value = '';
-    document.getElementById('relTipo').value = '';
-    document.querySelectorAll('input[name="campos"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="formatos"]').forEach(cb => cb.checked = false);
-    document.getElementById('relatorioModal').style.display = 'flex';
+    document.querySelector('form').reset();
+    document.getElementById('camposContainer').innerHTML = '';
+    document.getElementById('previewContainer').innerHTML = '<p style="color: #64748b; text-align: center; padding: 3rem;">Selecione campos para ver o preview</p>';
+    document.getElementById('relatorioModal').style.display = 'block';
 }
+
 function editRelatorio(idRel) {
     const rel = relatoriosData[idRel];
     document.getElementById('relatorioModalTitle').textContent = '✏️ Editar Relatório';
@@ -95,15 +234,30 @@ function editRelatorio(idRel) {
     document.getElementById('relIdInput').value = idRel;
     document.getElementById('relIdInput').readOnly = true;
     document.getElementById('relNome').value = rel.nome;
-    document.getElementById('relDescricao').value = rel.descricao;
+    document.getElementById('relDescricao').value = rel.descricao || '';
     document.getElementById('relTipo').value = rel.tipo;
-    document.getElementById('relLayoutExcel').value = rel.layout_excel || '';
-    document.getElementById('relLayoutPdf').value = rel.layout_pdf || '';
-    document.querySelectorAll('input[name="campos"]').forEach(cb => cb.checked = rel.campos.includes(cb.value));
-    document.querySelectorAll('input[name="formatos"]').forEach(cb => cb.checked = rel.formatos.includes(cb.value));
-    document.getElementById('relatorioModal').style.display = 'flex';
+    if (rel.tipo === 'outro') document.getElementById('relTipoOutro').value = rel.tipo_outro || '';
+    updateCampos();
+    setTimeout(() => {
+        rel.campos.forEach(campoId => {
+            const checkbox = document.querySelector(`input[name="campos"][value="${campoId}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+        rel.formatos.forEach(formato => {
+            const checkbox = document.querySelector(`input[name="formatos"][value="${formato}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+        updatePreview();
+    }, 100);
+    document.getElementById('relatorioModal').style.display = 'block';
 }
-function closeRelatorioModal() { document.getElementById('relatorioModal').style.display = 'none'; }
-window.onclick = function(event) { if (event.target.id === 'relatorioModal') closeRelatorioModal(); }
+
+function closeRelatorioModal() {
+    document.getElementById('relatorioModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target.id === 'relatorioModal') closeRelatorioModal();
+}
 </script>
 {% endblock %}

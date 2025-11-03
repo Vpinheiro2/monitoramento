@@ -36,11 +36,11 @@ def get_sensor_por_id(sensor_id):
 # ===== DADOS MOCKADOS =====
 
 usuarios = {
-    'operador': {'senha': '123', 'tipo': 'operador', 'nome': 'João Operador', 'email': 'operador@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'operador': True, 'relatorios': False}},
-    'ti': {'senha': '123', 'tipo': 'ti', 'nome': 'Maria TI', 'email': 'ti@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'operador': True, 'ti': True, 'relatorios': True}},
-    'manutencao': {'senha': '123', 'tipo': 'manutencao', 'nome': 'Carlos Manutenção', 'email': 'manutencao@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'manutencao': True, 'relatorios': True}},
-    'higienizacao': {'senha': '123', 'tipo': 'higienizacao', 'nome': 'Ana Higienização', 'email': 'higienizacao@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'higienizacao': True, 'relatorios': True}},
-    'qualidade': {'senha': '123', 'tipo': 'qualidade', 'nome': 'Pedro Qualidade', 'email': 'qualidade@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'qualidade': True, 'relatorios': True}}
+    'operador': {'senha': '123', 'tipo': 'operador', 'nome': 'João Operador', 'email': 'operador@empresa.com', 'cargo': 'Operador de Produção', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'operador': True, 'relatorios': False}},
+    'ti': {'senha': '123', 'tipo': 'ti', 'nome': 'Maria TI', 'email': 'ti@empresa.com', 'cargo': 'Analista de TI', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'operador': True, 'ti': True, 'relatorios': True}},
+    'manutencao': {'senha': '123', 'tipo': 'manutencao', 'nome': 'Carlos Manutenção', 'email': 'manutencao@empresa.com', 'cargo': 'Técnico de Manutenção', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'manutencao': True, 'relatorios': True}},
+    'higienizacao': {'senha': '123', 'tipo': 'higienizacao', 'nome': 'Ana Higienização', 'email': 'higienizacao@empresa.com', 'cargo': 'Auxiliar de Limpeza', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'higienizacao': True, 'relatorios': True}},
+    'qualidade': {'senha': '123', 'tipo': 'qualidade', 'nome': 'Pedro Qualidade', 'email': 'qualidade@empresa.com', 'cargo': 'Analista de Qualidade', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'qualidade': True, 'relatorios': True}}
 }
 
 sensores = [
@@ -137,6 +137,7 @@ relatorios_personalizados = {
         'nome': 'Produção Diária',
         'descricao': 'Relatório de produção',
         'tipo': 'processos',
+        'tipo_outro': '',
         'campos': ['equipamento', 'produto', 'ordem_producao', 'responsavel', 'data_finalizacao', 'status_qualidade'],
         'filtros': [
             {'nome': 'data_inicio', 'label': 'Data Início', 'tipo': 'date'},
@@ -784,11 +785,23 @@ def gerenciar_usuarios():
                 grupo_perms = grupos_usuarios[grupo_nome]['permissoes']
                 permissoes.update(grupo_perms)
             
+            # Determinar tipo baseado nas permissões
+            tipo = 'operador'  # padrão
+            if permissoes.get('ti'):
+                tipo = 'ti'
+            elif permissoes.get('qualidade'):
+                tipo = 'qualidade'
+            elif permissoes.get('manutencao'):
+                tipo = 'manutencao'
+            elif permissoes.get('higienizacao'):
+                tipo = 'higienizacao'
+            
             usuarios[username] = {
                 'senha': request.form.get('senha'),
                 'nome': request.form.get('nome'),
                 'email': request.form.get('email'),
-                'tipo': request.form.get('tipo'),
+                'cargo': request.form.get('cargo', ''),
+                'tipo': tipo,
                 'ativo': True,
                 'grupo': grupo_nome if grupo_nome else None,
                 'permissoes': permissoes
@@ -803,7 +816,7 @@ def gerenciar_usuarios():
             
             usuarios[username]['nome'] = request.form.get('nome')
             usuarios[username]['email'] = request.form.get('email')
-            usuarios[username]['tipo'] = request.form.get('tipo')
+            usuarios[username]['cargo'] = request.form.get('cargo', '')
             
             senha = request.form.get('senha')
             if senha:
@@ -820,6 +833,18 @@ def gerenciar_usuarios():
                 grupo_perms = grupos_usuarios[grupo_nome]['permissoes']
                 permissoes.update(grupo_perms)
             
+            # Atualizar tipo baseado nas permissões
+            tipo = 'operador'  # padrão
+            if permissoes.get('ti'):
+                tipo = 'ti'
+            elif permissoes.get('qualidade'):
+                tipo = 'qualidade'
+            elif permissoes.get('manutencao'):
+                tipo = 'manutencao'
+            elif permissoes.get('higienizacao'):
+                tipo = 'higienizacao'
+            
+            usuarios[username]['tipo'] = tipo
             usuarios[username]['grupo'] = grupo_nome if grupo_nome else None
             usuarios[username]['permissoes'] = permissoes
             
@@ -932,12 +957,15 @@ def gerenciar_relatorios():
                 return redirect(url_for('gerenciar_relatorios'))
             
             campos = request.form.getlist('campos')
+            tipo = request.form.get('tipo')
+            tipo_outro = request.form.get('tipo_outro', '') if tipo == 'outro' else ''
             
             relatorios_personalizados[id_rel] = {
                 'id': id_rel,
                 'nome': request.form.get('nome'),
                 'descricao': request.form.get('descricao', ''),
-                'tipo': request.form.get('tipo'),
+                'tipo': tipo,
+                'tipo_outro': tipo_outro,
                 'campos': campos,
                 'filtros': [
                     {'nome': 'data_inicio', 'label': 'Data Início', 'tipo': 'date'},
@@ -955,10 +983,13 @@ def gerenciar_relatorios():
             id_rel = request.form.get('id_relatorio')
             if id_rel in relatorios_personalizados:
                 campos = request.form.getlist('campos')
+                tipo = request.form.get('tipo')
+                tipo_outro = request.form.get('tipo_outro', '') if tipo == 'outro' else ''
                 
                 relatorios_personalizados[id_rel]['nome'] = request.form.get('nome')
                 relatorios_personalizados[id_rel]['descricao'] = request.form.get('descricao', '')
-                relatorios_personalizados[id_rel]['tipo'] = request.form.get('tipo')
+                relatorios_personalizados[id_rel]['tipo'] = tipo
+                relatorios_personalizados[id_rel]['tipo_outro'] = tipo_outro
                 relatorios_personalizados[id_rel]['campos'] = campos
                 relatorios_personalizados[id_rel]['formatos'] = request.form.getlist('formatos')
                 relatorios_personalizados[id_rel]['layout_excel'] = request.form.get('layout_excel')

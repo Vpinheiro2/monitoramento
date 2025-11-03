@@ -15,7 +15,7 @@
                 <th style="padding: 1rem; text-align: left;">Usuário</th>
                 <th style="padding: 1rem; text-align: left;">Nome</th>
                 <th style="padding: 1rem; text-align: left;">E-mail</th>
-                <th style="padding: 1rem; text-align: left;">Tipo</th>
+                <th style="padding: 1rem; text-align: left;">Cargo/Função</th>
                 <th style="padding: 1rem; text-align: left;">Grupo</th>
                 <th style="padding: 1rem; text-align: left;">Status</th>
                 <th style="padding: 1rem; text-align: left;">Ações</th>
@@ -27,7 +27,7 @@
                 <td style="padding: 1rem;"><strong>{{ username }}</strong></td>
                 <td style="padding: 1rem;">{{ user.nome }}</td>
                 <td style="padding: 1rem;"><small>{{ user.email }}</small></td>
-                <td style="padding: 1rem;"><span class="badge badge-info">{{ user.tipo | capitalize }}</span></td>
+                <td style="padding: 1rem;"><span class="badge badge-info">{{ user.cargo or 'Não informado' }}</span></td>
                 <td style="padding: 1rem;">{% if user.grupo %}<span class="badge badge-secondary">{{ user.grupo }}</span>{% else %}-{% endif %}</td>
                 <td style="padding: 1rem;">{% if user.ativo %}<span class="badge badge-success">✅ Ativo</span>{% else %}<span class="badge badge-secondary">❌ Inativo</span>{% endif %}</td>
                 <td style="padding: 1rem;">
@@ -61,12 +61,13 @@
                     <div class="form-group"><label class="form-label">Senha *</label><input type="password" name="senha" id="userSenha" class="form-control"></div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group"><label class="form-label">Tipo *</label><select name="tipo" id="userTipo" class="form-control" required><option value="">Selecione...</option><option value="operador">Operador</option><option value="manutencao">Manutenção</option><option value="higienizacao">Higienização</option><option value="qualidade">Qualidade</option><option value="ti">TI</option></select></div>
-                    <div class="form-group"><label class="form-label">Grupo</label><select name="grupo" id="userGrupo" class="form-control"><option value="">Nenhum</option>{% for nome, grupo in grupos.items() %}<option value="{{ nome }}">{{ grupo.nome }}</option>{% endfor %}</select></div>
+                    <div class="form-group"><label class="form-label">Cargo/Função</label><input type="text" name="cargo" id="userCargo" class="form-control" placeholder="Ex: Analista, Técnico, Operador..."></div>
+                    <div class="form-group"><label class="form-label">Grupo de Acesso</label><select name="grupo" id="userGrupo" class="form-control"><option value="">Nenhum (usar permissões detalhadas)</option>{% for nome, grupo in grupos.items() %}<option value="{{ nome }}">{{ grupo.nome }}</option>{% endfor %}</select></div>
                 </div>
             </div>
             <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--warning);">
                 <h3 style="margin-bottom: 1rem;">🔐 Permissões Detalhadas</h3>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">💡 Se um grupo for selecionado, suas permissões serão combinadas com as permissões detalhadas abaixo.</p>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">📊 Dashboard</strong>
@@ -117,6 +118,7 @@ function openAddUserModal() {
     document.getElementById('userForm').reset();
     document.getElementById('userUsername').readOnly = false;
     document.getElementById('userSenha').required = true;
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
     document.getElementById('userModal').style.display = 'flex';
 }
 function editUser(user, username) {
@@ -127,7 +129,7 @@ function editUser(user, username) {
     document.getElementById('userUsername').readOnly = true;
     document.getElementById('userNome').value = user.nome;
     document.getElementById('userEmail').value = user.email;
-    document.getElementById('userTipo').value = user.tipo;
+    document.getElementById('userCargo').value = user.cargo || '';
     document.getElementById('userGrupo').value = user.grupo || '';
     document.getElementById('userSenha').value = '';
     document.getElementById('userSenha').required = false;

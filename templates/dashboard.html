@@ -26,6 +26,10 @@
 .status-manutencao { background: #fef3c7; color: #92400e; }
 .status-higienizacao { background: #dbeafe; color: #1e40af; }
 .status-aguardando_qualidade { background: #fef3c7; color: #92400e; }
+.temp-loading { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.temp-alert { color: var(--danger); animation: blink 1s infinite; }
+@keyframes blink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0.5; } }
 </style>
 {% endblock %}
 {% block content %}
@@ -52,7 +56,7 @@
                     {% elif equip.status == 'ocupada' %}🔴 Em Processo
                     {% elif equip.status == 'manutencao' %}🔧 Manutenção
                     {% elif equip.status == 'higienizacao' %}🧼 Higienização
-                    {% elif equip.status == 'aguardando_qualidade' %}⏳ Aguardando
+                    {% elif equip.status == 'aguardando_qualidade' %}⏳ Aguardando Análise
                     {% endif %}
                 </span>
             </div>
@@ -64,8 +68,8 @@
             {% endif %}
             {% if equip.sensor_id %}
             <div id="temp-{{ equip.id }}" style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: center;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--info);" id="temp-value-{{ equip.id }}">
-                    <span class="loading">⏳</span>
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--info);" id="temp-value-{{ equip.id }}" class="temp-loading">
+                    --°C
                 </div>
                 <div style="font-size: 0.85rem; color: #0369a1; margin-top: 0.5rem;">
                     🌡️ Temperatura Atual
@@ -89,9 +93,12 @@ async function atualizarTemperatura(equipId) {
         const response = await fetch(`/api/equipamento/${equipId}/temperatura`);
         const data = await response.json();
         
-        if (data.temperatura) {
-            const tempElement = document.getElementById(`temp-value-${equipId}`);
-            const alertElement = document.getElementById(`temp-alert-${equipId}`);
+        const tempElement = document.getElementById(`temp-value-${equipId}`);
+        const alertElement = document.getElementById(`temp-alert-${equipId}`);
+        
+        if (data.temperatura !== undefined) {
+            // Remover classe de loading
+            tempElement.classList.remove('temp-loading');
             
             // Atualizar temperatura
             tempElement.innerHTML = `${data.temperatura}°C`;
@@ -99,14 +106,24 @@ async function atualizarTemperatura(equipId) {
             // Verificar alerta
             if (data.alerta) {
                 alertElement.style.display = 'block';
-                tempElement.style.color = 'var(--danger)';
+                tempElement.classList.add('temp-alert');
             } else {
                 alertElement.style.display = 'none';
-                tempElement.style.color = 'var(--info)';
+                tempElement.classList.remove('temp-alert');
             }
+        } else if (data.erro) {
+            tempElement.innerHTML = '⚠️';
+            tempElement.style.fontSize = '2rem';
+            tempElement.classList.remove('temp-loading');
         }
     } catch (error) {
         console.error(`Erro ao buscar temperatura do equipamento ${equipId}:`, error);
+        const tempElement = document.getElementById(`temp-value-${equipId}`);
+        if (tempElement) {
+            tempElement.innerHTML = '❌';
+            tempElement.style.fontSize = '2rem';
+            tempElement.classList.remove('temp-loading');
+        }
     }
 }
 
@@ -121,7 +138,10 @@ function atualizarTodasTemperaturas() {
 
 // Atualizar ao carregar e a cada 3 segundos
 document.addEventListener('DOMContentLoaded', function() {
+    // Primeira atualização imediata
     atualizarTodasTemperaturas();
+    
+    // Atualizar a cada 3 segundos
     setInterval(atualizarTodasTemperaturas, 3000);
 });
 </script>

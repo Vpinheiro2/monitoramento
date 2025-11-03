@@ -79,6 +79,7 @@
         border-radius: 8px;
         margin: 1rem 0;
         border: 2px solid #e2e8f0;
+        height: 300px;
     }
 
     .stats-grid {
@@ -173,9 +174,24 @@
                         {% elif sensor.tipo_comunicacao == 'rs232' %}
                             Porta: {{ sensor.config.porta }}<br>
                             Baud: {{ sensor.config.baud_rate }}
+                        {% elif sensor.tipo_comunicacao == 'rs485' %}
+                            Porta: {{ sensor.config.porta }}<br>
+                            Baud: {{ sensor.config.baud_rate }}
                         {% elif sensor.tipo_comunicacao == 'modbus' %}
                             Escravo: {{ sensor.config.endereco_escravo }}<br>
                             Porta: {{ sensor.config.porta }}
+                        {% elif sensor.tipo_comunicacao == 'can' %}
+                            Interface: {{ sensor.config.interface }}<br>
+                            Bitrate: {{ sensor.config.bitrate }}
+                        {% elif sensor.tipo_comunicacao == 'bluetooth' %}
+                            MAC: {{ sensor.config.mac_address }}<br>
+                            PIN: {{ sensor.config.pin }}
+                        {% elif sensor.tipo_comunicacao == 'zigbee' %}
+                            PAN ID: {{ sensor.config.pan_id }}<br>
+                            Canal: {{ sensor.config.canal }}
+                        {% elif sensor.tipo_comunicacao == 'wifi' %}
+                            SSID: {{ sensor.config.ssid }}<br>
+                            IP: {{ sensor.config.ip }}
                         {% endif %}
                     </small>
                 </td>
@@ -264,7 +280,7 @@
         </div>
 
         <div class="chart-container">
-            <canvas id="tempChart" width="700" height="300"></canvas>
+            <canvas id="tempChart"></canvas>
         </div>
 
         <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
@@ -275,7 +291,7 @@
     </div>
 </div>
 
-<!-- Modal Adicionar/Editar (código anterior mantido) -->
+<!-- Modal Adicionar/Editar -->
 <div id="sensorModal" class="modal">
     <div class="modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -338,6 +354,8 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 const sensoresData = {{ sensores | tojson | safe }};
 
@@ -394,6 +412,186 @@ function updateConfigFields() {
                 </div>
             </div>
         `;
+    } else if (tipo === 'i2c') {
+        html += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Endereço I²C *</label>
+                    <input type="text" name="endereco" id="configEndereco" class="form-control" placeholder="0x48" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Barramento *</label>
+                    <input type="text" name="barramento" id="configBarramento" class="form-control" placeholder="/dev/i2c-1" required>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'serial') {
+        html += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Porta Serial *</label>
+                    <input type="text" name="porta_serial" id="configPortaSerial" class="form-control" placeholder="/dev/ttyUSB0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Baud Rate *</label>
+                    <select name="baud_rate_serial" id="configBaudRateSerial" class="form-control" required>
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'rs232') {
+        html += `
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Porta RS-232 *</label>
+                    <input type="text" name="porta_rs232" id="configPortaRs232" class="form-control" placeholder="COM1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Baud Rate *</label>
+                    <select name="baud_rate_rs232" id="configBaudRateRs232" class="form-control" required>
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Data Bits *</label>
+                    <select name="data_bits" id="configDataBits" class="form-control" required>
+                        <option value="7">7</option>
+                        <option value="8" selected>8</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stop Bits *</label>
+                    <select name="stop_bits" id="configStopBits" class="form-control" required>
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Paridade *</label>
+                    <select name="parity" id="configParity" class="form-control" required>
+                        <option value="none" selected>Nenhuma</option>
+                        <option value="even">Par</option>
+                        <option value="odd">Ímpar</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'rs485') {
+        html += `
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Porta RS-485 *</label>
+                    <input type="text" name="porta_rs485" id="configPortaRs485" class="form-control" placeholder="COM2" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Baud Rate *</label>
+                    <select name="baud_rate_rs485" id="configBaudRateRs485" class="form-control" required>
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Endereço *</label>
+                    <input type="text" name="endereco_rs485" id="configEnderecoRs485" class="form-control" placeholder="1" required>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'modbus') {
+        html += `
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Endereço Escravo *</label>
+                    <input type="text" name="endereco_escravo" id="configEnderecoEscravo" class="form-control" placeholder="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Porta Modbus *</label>
+                    <input type="text" name="porta_modbus" id="configPortaModbus" class="form-control" placeholder="COM3" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Baud Rate *</label>
+                    <select name="baud_rate_modbus" id="configBaudRateModbus" class="form-control" required>
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'can') {
+        html += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Interface CAN *</label>
+                    <input type="text" name="interface_can" id="configInterfaceCan" class="form-control" placeholder="can0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bitrate *</label>
+                    <select name="bitrate_can" id="configBitrateCan" class="form-control" required>
+                        <option value="125000">125 kbps</option>
+                        <option value="250000">250 kbps</option>
+                        <option value="500000" selected>500 kbps</option>
+                        <option value="1000000">1 Mbps</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'bluetooth') {
+        html += `
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">MAC Address *</label>
+                    <input type="text" name="mac_address" id="configMacAddress" class="form-control" placeholder="00:11:22:33:44:55" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PIN</label>
+                    <input type="text" name="pin_bluetooth" id="configPinBluetooth" class="form-control" placeholder="1234">
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'zigbee') {
+        html += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">PAN ID *</label>
+                    <input type="text" name="pan_id" id="configPanId" class="form-control" placeholder="0x1234" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Canal *</label>
+                    <input type="number" name="canal_zigbee" id="configCanalZigbee" class="form-control" min="11" max="26" value="15" required>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'wifi') {
+        html += `
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">SSID *</label>
+                    <input type="text" name="ssid" id="configSsid" class="form-control" placeholder="Nome da Rede" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">IP *</label>
+                    <input type="text" name="ip_wifi" id="configIpWifi" class="form-control" placeholder="192.168.1.100" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Porta *</label>
+                    <input type="text" name="porta_wifi" id="configPortaWifi" class="form-control" value="80" required>
+                </div>
+            </div>
+        `;
     }
     
     html += '</div>';
@@ -434,6 +632,39 @@ function editSensor(id) {
         } else if (sensor.tipo_comunicacao === 'usb_com') {
             document.getElementById('configPortaCom').value = config.porta_com || '';
             document.getElementById('configBaudRate').value = config.baud_rate || '';
+        } else if (sensor.tipo_comunicacao === 'i2c') {
+            document.getElementById('configEndereco').value = config.endereco || '';
+            document.getElementById('configBarramento').value = config.barramento || '';
+        } else if (sensor.tipo_comunicacao === 'serial') {
+            document.getElementById('configPortaSerial').value = config.porta || '';
+            document.getElementById('configBaudRateSerial').value = config.baud_rate || '';
+        } else if (sensor.tipo_comunicacao === 'rs232') {
+            document.getElementById('configPortaRs232').value = config.porta || '';
+            document.getElementById('configBaudRateRs232').value = config.baud_rate || '';
+            document.getElementById('configDataBits').value = config.data_bits || '8';
+            document.getElementById('configStopBits').value = config.stop_bits || '1';
+            document.getElementById('configParity').value = config.parity || 'none';
+        } else if (sensor.tipo_comunicacao === 'rs485') {
+            document.getElementById('configPortaRs485').value = config.porta || '';
+            document.getElementById('configBaudRateRs485').value = config.baud_rate || '';
+            document.getElementById('configEnderecoRs485').value = config.endereco || '';
+        } else if (sensor.tipo_comunicacao === 'modbus') {
+            document.getElementById('configEnderecoEscravo').value = config.endereco_escravo || '';
+            document.getElementById('configPortaModbus').value = config.porta || '';
+            document.getElementById('configBaudRateModbus').value = config.baud_rate || '';
+        } else if (sensor.tipo_comunicacao === 'can') {
+            document.getElementById('configInterfaceCan').value = config.interface || '';
+            document.getElementById('configBitrateCan').value = config.bitrate || '500000';
+        } else if (sensor.tipo_comunicacao === 'bluetooth') {
+            document.getElementById('configMacAddress').value = config.mac_address || '';
+            document.getElementById('configPinBluetooth').value = config.pin || '';
+        } else if (sensor.tipo_comunicacao === 'zigbee') {
+            document.getElementById('configPanId').value = config.pan_id || '';
+            document.getElementById('configCanalZigbee').value = config.canal || '15';
+        } else if (sensor.tipo_comunicacao === 'wifi') {
+            document.getElementById('configSsid').value = config.ssid || '';
+            document.getElementById('configIpWifi').value = config.ip || '';
+            document.getElementById('configPortaWifi').value = config.porta || '80';
         }
     }, 100);
     
@@ -597,8 +828,5 @@ window.onclick = function(event) {
     }
 }
 </script>
-
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 {% endblock %}
