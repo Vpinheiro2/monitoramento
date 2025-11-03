@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Sensores{% endblock %}
+
+{% block extra_css %}
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 900px;
+        width: 95%;
+        margin: 2rem auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .config-fields {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border-left: 4px solid var(--info);
+    }
+
+    .status-teste {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .status-teste.sucesso {
+        background: #dcfce7;
+        border-left: 4px solid var(--success);
+    }
+
+    .status-teste.erro {
+        background: #fee2e2;
+        border-left: 4px solid var(--danger);
+    }
+
+    /* Modal de Teste */
+    .test-modal {
+        max-width: 800px;
+    }
+
+    .temp-display {
+        font-size: 4rem;
+        font-weight: bold;
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+
+    .chart-container {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border: 2px solid #e2e8f0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .stat-box {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--primary);
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .pulsing {
+        animation: pulse 2s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
+            🌡️ Gerenciamento de Sensores
+        </h1>
+        <p style="color: #64748b;">
+            <a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar para TI</a>
+        </p>
+    </div>
+    <button onclick="openAddModal()" class="btn btn-success">
+        ➕ Novo Sensor
+    </button>
+</div>
+
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--primary); color: white;">
+            <tr>
+                <th style="padding: 1rem; text-align: left;">ID</th>
+                <th style="padding: 1rem; text-align: left;">Nome</th>
+                <th style="padding: 1rem; text-align: left;">Comunicação</th>
+                <th style="padding: 1rem; text-align: left;">Configuração</th>
+                <th style="padding: 1rem; text-align: left;">Limites</th>
+                <th style="padding: 1rem; text-align: left;">Status Teste</th>
+                <th style="padding: 1rem; text-align: left;">Ativo</th>
+                <th style="padding: 1rem; text-align: left;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sensor in sensores %}
+            <tr style="border-bottom: 1px solid #e2e8f0; {% if not sensor.get('ativo', True) %}opacity: 0.5;{% endif %}">
+                <td style="padding: 1rem;">{{ sensor.id }}</td>
+                <td style="padding: 1rem;"><strong>{{ sensor.nome }}</strong></td>
+                <td style="padding: 1rem;">
+                    <span class="badge badge-info">{{ sensor.tipo_comunicacao | upper }}</span>
+                </td>
+                <td style="padding: 1rem;">
+                    <small style="color: #64748b;">
+                        {% if sensor.tipo_comunicacao == 'rede' %}
+                            IP: {{ sensor.config.ip }}<br>
+                            Porta: {{ sensor.config.porta }}<br>
+                            Canal: {{ sensor.config.canal }}
+                        {% elif sensor.tipo_comunicacao == 'usb_com' %}
+                            COM: {{ sensor.config.porta_com }}<br>
+                            Baud: {{ sensor.config.baud_rate }}
+                        {% elif sensor.tipo_comunicacao == 'i2c' %}
+                            Endereço: {{ sensor.config.endereco }}<br>
+                            Barramento: {{ sensor.config.barramento }}
+                        {% elif sensor.tipo_comunicacao == 'serial' %}
+                            Porta: {{ sensor.config.porta }}<br>
+                            Baud: {{ sensor.config.baud_rate }}
+                        {% elif sensor.tipo_comunicacao == 'rs232' %}
+                            Porta: {{ sensor.config.porta }}<br>
+                            Baud: {{ sensor.config.baud_rate }}
+                        {% elif sensor.tipo_comunicacao == 'modbus' %}
+                            Escravo: {{ sensor.config.endereco_escravo }}<br>
+                            Porta: {{ sensor.config.porta }}
+                        {% endif %}
+                    </small>
+                </td>
+                <td style="padding: 1rem;">
+                    <small>
+                        Min: {{ sensor.temp_min }}°C<br>
+                        Max: {{ sensor.temp_max }}°C
+                    </small>
+                </td>
+                <td style="padding: 1rem;">
+                    {% if sensor.status_teste %}
+                        {% if sensor.status_teste.status == 'sucesso' %}
+                            <span class="badge badge-success">✅ OK</span><br>
+                            <small style="color: #64748b;">{{ sensor.status_teste.temperatura_lida }}°C</small>
+                        {% else %}
+                            <span class="badge badge-danger">❌ Falha</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge badge-secondary">Não testado</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    {% if sensor.get('ativo', True) %}
+                        <span class="badge badge-success">✅ Sim</span>
+                    {% else %}
+                        <span class="badge badge-secondary">❌ Não</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button onclick="abrirTesteModal({{ sensor.id }}, '{{ sensor.nome }}')" class="btn btn-info" style="padding: 0.5rem 0.75rem;" title="Testar Sensor">
+                            🔍
+                        </button>
+                        <button onclick="editSensor({{ sensor.id }})" class="btn btn-primary" style="padding: 0.5rem 0.75rem;">
+                            ✏️
+                        </button>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="acao" value="ativar_desativar">
+                            <input type="hidden" name="sensor_id" value="{{ sensor.id }}">
+                            <button type="submit" class="btn btn-warning" style="padding: 0.5rem 0.75rem;">
+                                {% if sensor.get('ativo', True) %}🔒{% else %}🔓{% endif %}
+                            </button>
+                        </form>
+                        <button onclick="deleteSensor({{ sensor.id }}, '{{ sensor.nome }}')" class="btn btn-danger" style="padding: 0.5rem 0.75rem;">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal de Teste de Sensor -->
+<div id="testModal" class="modal">
+    <div class="modal-content test-modal">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="color: var(--primary); margin: 0;">🔬 Teste de Sensor em Tempo Real</h2>
+            <span onclick="fecharTesteModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <h3 id="testSensorName" style="color: #64748b;">Sensor</h3>
+            <span id="testStatus" class="badge badge-info pulsing">🔄 Testando comunicação...</span>
+        </div>
+
+        <div class="temp-display" id="tempDisplay">
+            <div style="font-size: 1rem; margin-bottom: 0.5rem;">Temperatura Atual</div>
+            <div id="tempValue">--°C</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Mínima</div>
+                <div class="stat-value" id="tempMin" style="color: var(--info);">--°C</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Média</div>
+                <div class="stat-value" id="tempMedia">--°C</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Máxima</div>
+                <div class="stat-value" id="tempMax" style="color: var(--danger);">--°C</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="tempChart" width="700" height="300"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+            <button onclick="fecharTesteModal()" class="btn btn-secondary">
+                ✅ Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar/Editar (código anterior mantido) -->
+<div id="sensorModal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 id="modalTitle" style="color: var(--primary); margin: 0;">➕ Novo Sensor</h2>
+            <span onclick="closeModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
+        </div>
+        
+        <form method="POST" id="sensorForm">
+            <input type="hidden" name="acao" id="formAcao" value="adicionar">
+            <input type="hidden" name="sensor_id" id="formSensorId">
+            
+            <div class="form-group">
+                <label class="form-label">Nome do Sensor *</label>
+                <input type="text" name="nome" id="formNome" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Tipo de Comunicação *</label>
+                <select name="tipo_comunicacao" id="formTipoCom" class="form-control" required onchange="updateConfigFields()">
+                    <option value="">Selecione...</option>
+                    <option value="rede">Rede (TCP/IP)</option>
+                    <option value="usb_com">USB / COM</option>
+                    <option value="i2c">I²C</option>
+                    <option value="serial">Serial</option>
+                    <option value="rs232">RS-232</option>
+                    <option value="rs485">RS-485</option>
+                    <option value="modbus">Modbus RTU</option>
+                    <option value="can">CAN Bus</option>
+                    <option value="bluetooth">Bluetooth</option>
+                    <option value="zigbee">ZigBee</option>
+                    <option value="wifi">Wi-Fi</option>
+                </select>
+            </div>
+
+            <div id="configFields"></div>
+
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">🌡️ Limites de Temperatura</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Temperatura Mínima (°C)</label>
+                        <input type="number" name="temp_min" id="formTempMin" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Temperatura Máxima (°C)</label>
+                        <input type="number" name="temp_max" id="formTempMax" class="form-control">
+                    </div>
+                </div>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-top: 1rem;">
+                    <input type="checkbox" name="alerta_ativo" id="formAlertaAtivo">
+                    <span>Enviar alertas quando ultrapassar limites</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="submit" class="btn btn-success" id="submitBtn">✅ Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const sensoresData = {{ sensores | tojson | safe }};
+
+// Variáveis para teste em tempo real
+let testInterval;
+let chartInstance;
+let tempReadings = [];
+let currentSensorId;
+
+function updateConfigFields() {
+    const tipo = document.getElementById('formTipoCom').value;
+    const container = document.getElementById('configFields');
+    
+    if (!tipo) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="config-fields"><h3 style="margin-bottom: 1rem;">⚙️ Configurações de Comunicação</h3>';
+    
+    if (tipo === 'rede') {
+        html += `
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">IP *</label>
+                    <input type="text" name="ip" id="configIp" class="form-control" placeholder="192.168.1.100" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Porta *</label>
+                    <input type="text" name="porta" id="configPorta" class="form-control" value="80" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Canal *</label>
+                    <input type="text" name="canal" id="configCanal" class="form-control" required>
+                </div>
+            </div>
+        `;
+    } else if (tipo === 'usb_com') {
+        html += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Porta COM *</label>
+                    <input type="text" name="porta_com" id="configPortaCom" class="form-control" placeholder="COM3" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Baud Rate *</label>
+                    <select name="baud_rate" id="configBaudRate" class="form-control" required>
+                        <option value="9600">9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = '➕ Novo Sensor';
+    document.getElementById('formAcao').value = 'adicionar';
+    document.getElementById('submitBtn').textContent = '✅ Adicionar';
+    document.getElementById('sensorForm').reset();
+    document.getElementById('configFields').innerHTML = '';
+    document.getElementById('sensorModal').classList.add('active');
+}
+
+function editSensor(id) {
+    const sensor = sensoresData.find(s => s.id === id);
+    if (!sensor) return;
+    
+    document.getElementById('modalTitle').textContent = '✏️ Editar Sensor';
+    document.getElementById('formAcao').value = 'editar';
+    document.getElementById('submitBtn').textContent = '💾 Salvar';
+    document.getElementById('formSensorId').value = sensor.id;
+    document.getElementById('formNome').value = sensor.nome;
+    document.getElementById('formTipoCom').value = sensor.tipo_comunicacao;
+    document.getElementById('formTempMin').value = sensor.temp_min || '';
+    document.getElementById('formTempMax').value = sensor.temp_max || '';
+    document.getElementById('formAlertaAtivo').checked = sensor.alerta_ativo || false;
+    
+    updateConfigFields();
+    
+    setTimeout(() => {
+        const config = sensor.config;
+        if (sensor.tipo_comunicacao === 'rede') {
+            document.getElementById('configIp').value = config.ip || '';
+            document.getElementById('configPorta').value = config.porta || '';
+            document.getElementById('configCanal').value = config.canal || '';
+        } else if (sensor.tipo_comunicacao === 'usb_com') {
+            document.getElementById('configPortaCom').value = config.porta_com || '';
+            document.getElementById('configBaudRate').value = config.baud_rate || '';
+        }
+    }, 100);
+    
+    document.getElementById('sensorModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('sensorModal').classList.remove('active');
+}
+
+function deleteSensor(id, nome) {
+    if (confirm(`⚠️ Confirma a exclusão de "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="acao" value="excluir">
+            <input type="hidden" name="sensor_id" value="${id}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Funções de teste em tempo real
+function abrirTesteModal(sensorId, sensorNome) {
+    currentSensorId = sensorId;
+    tempReadings = [];
+    
+    document.getElementById('testSensorName').textContent = sensorNome;
+    document.getElementById('testModal').classList.add('active');
+    
+    // Iniciar gráfico
+    iniciarGrafico();
+    
+    // Iniciar leituras
+    iniciarLeituras();
+}
+
+function fecharTesteModal() {
+    document.getElementById('testModal').classList.remove('active');
+    
+    // Parar leituras
+    if (testInterval) {
+        clearInterval(testInterval);
+    }
+    
+    // Destruir gráfico
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+}
+
+function iniciarGrafico() {
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Temperatura (°C)',
+                data: [],
+                borderColor: '#4A90E2',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: 'Temperatura (°C)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Tempo'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+async function iniciarLeituras() {
+    // Primeira leitura imediata
+    await lerTemperatura();
+    
+    // Leituras a cada 1 segundo
+    testInterval = setInterval(lerTemperatura, 1000);
+}
+
+async function lerTemperatura() {
+    try {
+        const response = await fetch(`/api/sensor/${currentSensorId}/temperatura`);
+        const data = await response.json();
+        
+        if (data.temperatura) {
+            // Adicionar leitura
+            tempReadings.push(data.temperatura);
+            
+            // Manter apenas últimas 30 leituras
+            if (tempReadings.length > 30) {
+                tempReadings.shift();
+            }
+            
+            // Atualizar display
+            document.getElementById('tempValue').textContent = `${data.temperatura}°C`;
+            document.getElementById('testStatus').className = 'badge badge-success';
+            document.getElementById('testStatus').textContent = '✅ Comunicação OK';
+            document.getElementById('testStatus').classList.remove('pulsing');
+            
+            // Calcular estatísticas
+            const min = Math.min(...tempReadings);
+            const max = Math.max(...tempReadings);
+            const media = (tempReadings.reduce((a, b) => a + b, 0) / tempReadings.length).toFixed(2);
+            
+            document.getElementById('tempMin').textContent = `${min.toFixed(2)}°C`;
+            document.getElementById('tempMax').textContent = `${max.toFixed(2)}°C`;
+            document.getElementById('tempMedia').textContent = `${media}°C`;
+            
+            // Atualizar gráfico
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            chartInstance.data.labels.push(timeLabel);
+            chartInstance.data.datasets[0].data.push(data.temperatura);
+            
+            // Manter apenas últimas 30 entradas no gráfico
+            if (chartInstance.data.labels.length > 30) {
+                chartInstance.data.labels.shift();
+                chartInstance.data.datasets[0].data.shift();
+            }
+            
+            chartInstance.update('none'); // Atualização sem animação para melhor performance
+        }
+    } catch (error) {
+        console.error('Erro ao ler temperatura:', error);
+        document.getElementById('testStatus').className = 'badge badge-danger';
+        document.getElementById('testStatus').textContent = '❌ Erro na comunicação';
+    }
+}
+
+window.onclick = function(event) {
+    if (event.target.id === 'sensorModal') {
+        closeModal();
+    }
+    if (event.target.id === 'testModal') {
+        fecharTesteModal();
+    }
+}
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% endblock %}

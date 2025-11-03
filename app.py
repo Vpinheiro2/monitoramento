@@ -30,6 +30,9 @@ def get_cor_status(status):
 def get_equipamento_por_id(equip_id):
     return next((e for e in equipamentos if e['id'] == equip_id), None)
 
+def get_sensor_por_id(sensor_id):
+    return next((s for s in sensores if s['id'] == sensor_id), None)
+
 # ===== DADOS MOCKADOS =====
 
 usuarios = {
@@ -40,10 +43,43 @@ usuarios = {
     'qualidade': {'senha': '123', 'tipo': 'qualidade', 'nome': 'Pedro Qualidade', 'email': 'qualidade@empresa.com', 'ativo': True, 'grupo': None, 'permissoes': {'dashboard': True, 'qualidade': True, 'relatorios': True}}
 }
 
+sensores = [
+    {
+        'id': 1,
+        'nome': 'Sensor-1',
+        'tipo_comunicacao': 'rede',
+        'config': {
+            'ip': '192.168.1.254',
+            'porta': '80',
+            'canal': '1'
+        },
+        'temp_min': 20,
+        'temp_max': 80,
+        'alerta_ativo': True,
+        'status_teste': None,
+        'ativo': True
+    },
+    {
+        'id': 2,
+        'nome': 'Sensor-2',
+        'tipo_comunicacao': 'rede',
+        'config': {
+            'ip': '192.168.1.254',
+            'porta': '80',
+            'canal': '2'
+        },
+        'temp_min': 20,
+        'temp_max': 80,
+        'alerta_ativo': True,
+        'status_teste': None,
+        'ativo': True
+    }
+]
+
 equipamentos = [
-    {'id': 1, 'nome': 'Estufa 01', 'tipo': 'estufa', 'status': 'livre', 'icone': '🌡️', 'processo': None, 'manutencao': None, 'higienizacao': None, 'sensor': {'ativo': True, 'ip': '192.168.1.254', 'porta': '80', 'canal': '1', 'temp_min': 20, 'temp_max': 80, 'alerta_ativo': True}, 'descricao': 'Estufa principal', 'localizacao': 'Galpão A', 'ativo': True, 'campos_personalizados': []},
-    {'id': 2, 'nome': 'Estufa 02', 'tipo': 'estufa', 'status': 'ocupada', 'icone': '🌡️', 'processo': {'produto': 'Tomates', 'ordem_producao': 'OP-001', 'duracao': '08:00', 'carregado_as': '14:30', 'responsavel': 'João', 'data_inicio': '2024-10-30'}, 'manutencao': None, 'higienizacao': None, 'sensor': {'ativo': True, 'ip': '192.168.1.254', 'porta': '80', 'canal': '2', 'temp_min': 20, 'temp_max': 80, 'alerta_ativo': True}, 'descricao': 'Estufa secundária', 'localizacao': 'Galpão A', 'ativo': True, 'campos_personalizados': []},
-    {'id': 3, 'nome': 'Autoclave 01', 'tipo': 'autoclave', 'status': 'livre', 'icone': '⚗️', 'processo': None, 'manutencao': None, 'higienizacao': None, 'sensor': {'ativo': False, 'ip': None, 'porta': None, 'canal': None}, 'descricao': 'Autoclave', 'localizacao': 'Lab', 'ativo': True, 'campos_personalizados': []}
+    {'id': 1, 'nome': 'Estufa 01', 'tipo': 'estufa', 'status': 'livre', 'icone': '🌡️', 'processo': None, 'manutencao': None, 'higienizacao': None, 'sensor_id': 1, 'descricao': 'Estufa principal', 'localizacao': 'Galpão A', 'ativo': True, 'campos_personalizados': []},
+    {'id': 2, 'nome': 'Estufa 02', 'tipo': 'estufa', 'status': 'ocupada', 'icone': '🌡️', 'processo': {'produto': 'Tomates', 'ordem_producao': 'OP-001', 'duracao': '08:00', 'carregado_as': '14:30', 'responsavel': 'João', 'data_inicio': '2024-10-30'}, 'manutencao': None, 'higienizacao': None, 'sensor_id': 2, 'descricao': 'Estufa secundária', 'localizacao': 'Galpão A', 'ativo': True, 'campos_personalizados': []},
+    {'id': 3, 'nome': 'Autoclave 01', 'tipo': 'autoclave', 'status': 'livre', 'icone': '⚗️', 'processo': None, 'manutencao': None, 'higienizacao': None, 'sensor_id': None, 'descricao': 'Autoclave', 'localizacao': 'Lab', 'ativo': True, 'campos_personalizados': []}
 ]
 
 icones_disponiveis = {
@@ -56,6 +92,43 @@ icones_disponiveis = {
 grupos_usuarios = {
     'Operadores': {'id': 1, 'nome': 'Operadores', 'descricao': 'Operadores de produção', 'cor': '#4A90E2', 'permissoes': {'dashboard': True, 'operador': True}},
     'TI': {'id': 2, 'nome': 'TI', 'descricao': 'TI - Acesso total', 'cor': '#ef4444', 'permissoes': {'dashboard': True, 'operador': True, 'ti': True}}
+}
+
+# Layouts para relatórios
+layouts_relatorios = {
+    'layout_padrao_excel': {
+        'id': 'layout_padrao_excel',
+        'nome': 'Layout Padrão Excel',
+        'tipo': 'excel',
+        'config': {
+            'cabecalho': {
+                'titulo': 'RELATÓRIO DE PRODUÇÃO',
+                'subtitulo': 'Sistema de Monitoramento',
+                'cor_fundo': '#4A90E2',
+                'cor_texto': '#FFFFFF'
+            },
+            'tabela': {
+                'cor_cabecalho': '#4A90E2',
+                'cor_linhas_alternadas': True
+            }
+        }
+    },
+    'layout_padrao_pdf': {
+        'id': 'layout_padrao_pdf',
+        'nome': 'Layout Padrão PDF',
+        'tipo': 'pdf',
+        'config': {
+            'cabecalho': {
+                'titulo': 'RELATÓRIO DE PRODUÇÃO',
+                'subtitulo': 'Sistema de Monitoramento',
+                'logo': None
+            },
+            'rodape': {
+                'texto': 'Gerado automaticamente pelo Sistema de Monitoramento',
+                'numeracao': True
+            }
+        }
+    }
 }
 
 relatorios_personalizados = {
@@ -71,6 +144,8 @@ relatorios_personalizados = {
             {'nome': 'equipamento_id', 'label': 'Equipamento', 'tipo': 'select'}
         ],
         'formatos': ['excel', 'pdf'],
+        'layout_excel': 'layout_padrao_excel',
+        'layout_pdf': 'layout_padrao_pdf',
         'ativo': True
     }
 }
@@ -85,6 +160,8 @@ def inject_globals():
         'usuarios': usuarios,
         'grupos_usuarios': grupos_usuarios,
         'relatorios_personalizados': relatorios_personalizados,
+        'layouts_relatorios': layouts_relatorios,
+        'sensores': sensores,
         'get_cor_status': get_cor_status
     }
 
@@ -168,7 +245,6 @@ def gerenciar(equip_id):
         flash('Equipamento não encontrado!', 'danger')
         return redirect(url_for('operador'))
     
-    # Bloquear se estiver aguardando qualidade (exceto para qualidade)
     if equipamento['status'] == 'aguardando_qualidade' and session.get('tipo_usuario') not in ['qualidade', 'ti']:
         flash('Este equipamento está aguardando validação da qualidade!', 'warning')
         return redirect(url_for('operador'))
@@ -187,7 +263,6 @@ def gerenciar(equip_id):
             equipamento['status'] = 'ocupada'
             flash('Processo iniciado!', 'success')
         elif acao == 'finalizar':
-            # Salvar processo finalizado
             processo_finalizado = {
                 'id': len(processos_finalizados) + 1,
                 'equipamento': equipamento['nome'],
@@ -215,7 +290,8 @@ def ti():
                          equipamentos=equipamentos,
                          usuarios=usuarios,
                          grupos_usuarios=grupos_usuarios,
-                         relatorios_personalizados=relatorios_personalizados)
+                         relatorios_personalizados=relatorios_personalizados,
+                         sensores=sensores)
 
 @app.route('/ti/equipamentos', methods=['GET', 'POST'])
 @login_required
@@ -226,7 +302,7 @@ def ti_equipamentos():
         
         if acao == 'adicionar':
             novo_id = max([e['id'] for e in equipamentos]) + 1 if equipamentos else 1
-            tem_sensor = request.form.get('tem_sensor') == 'on'
+            sensor_id = request.form.get('sensor_id')
             
             novo = {
                 'id': novo_id,
@@ -241,15 +317,7 @@ def ti_equipamentos():
                 'higienizacao': None,
                 'ativo': True,
                 'campos_personalizados': [],
-                'sensor': {
-                    'ativo': tem_sensor,
-                    'ip': request.form.get('sensor_ip') if tem_sensor else None,
-                    'porta': request.form.get('sensor_porta') if tem_sensor else None,
-                    'canal': request.form.get('sensor_canal') if tem_sensor else None,
-                    'temp_min': int(request.form.get('temp_min')) if request.form.get('temp_min') else None,
-                    'temp_max': int(request.form.get('temp_max')) if request.form.get('temp_max') else None,
-                    'alerta_ativo': request.form.get('alerta_ativo') == 'on'
-                }
+                'sensor_id': int(sensor_id) if sensor_id and sensor_id != '' else None
             }
             equipamentos.append(novo)
             flash(f'Equipamento {novo["nome"]} criado!', 'success')
@@ -265,16 +333,9 @@ def ti_equipamentos():
                 equip['descricao'] = request.form.get('descricao', '')
                 equip['localizacao'] = request.form.get('localizacao', '')
                 
-                tem_sensor = request.form.get('tem_sensor') == 'on'
-                equip['sensor'] = {
-                    'ativo': tem_sensor,
-                    'ip': request.form.get('sensor_ip') if tem_sensor else None,
-                    'porta': request.form.get('sensor_porta') if tem_sensor else None,
-                    'canal': request.form.get('sensor_canal') if tem_sensor else None,
-                    'temp_min': int(request.form.get('temp_min')) if request.form.get('temp_min') else None,
-                    'temp_max': int(request.form.get('temp_max')) if request.form.get('temp_max') else None,
-                    'alerta_ativo': request.form.get('alerta_ativo') == 'on'
-                }
+                sensor_id = request.form.get('sensor_id')
+                equip['sensor_id'] = int(sensor_id) if sensor_id and sensor_id != '' else None
+                
                 flash('Equipamento atualizado!', 'success')
             return redirect(url_for('ti_equipamentos'))
         
@@ -297,7 +358,182 @@ def ti_equipamentos():
                 flash(f'Equipamento {status}!', 'success')
             return redirect(url_for('ti_equipamentos'))
     
-    return render_template('ti_equipamentos.html', equipamentos=equipamentos, icones_disponiveis=icones_disponiveis)
+    return render_template('ti_equipamentos.html', equipamentos=equipamentos, icones_disponiveis=icones_disponiveis, sensores=sensores)
+
+@app.route('/ti/sensores', methods=['GET', 'POST'])
+@login_required
+@tipo_usuario_required('ti')
+def ti_sensores():
+    if request.method == 'POST':
+        acao = request.form.get('acao')
+        
+        if acao == 'adicionar':
+            novo_id = max([s['id'] for s in sensores]) + 1 if sensores else 1
+            tipo_com = request.form.get('tipo_comunicacao')
+            
+            config = {}
+            if tipo_com == 'rede':
+                config = {
+                    'ip': request.form.get('ip'),
+                    'porta': request.form.get('porta'),
+                    'canal': request.form.get('canal')
+                }
+            elif tipo_com == 'usb_com':
+                config = {
+                    'porta_com': request.form.get('porta_com'),
+                    'baud_rate': request.form.get('baud_rate')
+                }
+            elif tipo_com == 'i2c':
+                config = {
+                    'endereco': request.form.get('endereco'),
+                    'barramento': request.form.get('barramento')
+                }
+            elif tipo_com == 'serial':
+                config = {
+                    'porta': request.form.get('porta_serial'),
+                    'baud_rate': request.form.get('baud_rate_serial')
+                }
+            elif tipo_com == 'rs232':
+                config = {
+                    'porta': request.form.get('porta_rs232'),
+                    'baud_rate': request.form.get('baud_rate_rs232'),
+                    'data_bits': request.form.get('data_bits'),
+                    'stop_bits': request.form.get('stop_bits'),
+                    'parity': request.form.get('parity')
+                }
+            elif tipo_com == 'modbus':
+                config = {
+                    'endereco_escravo': request.form.get('endereco_escravo'),
+                    'porta': request.form.get('porta_modbus'),
+                    'baud_rate': request.form.get('baud_rate_modbus')
+                }
+            
+            novo_sensor = {
+                'id': novo_id,
+                'nome': request.form.get('nome'),
+                'tipo_comunicacao': tipo_com,
+                'config': config,
+                'temp_min': int(request.form.get('temp_min')) if request.form.get('temp_min') else None,
+                'temp_max': int(request.form.get('temp_max')) if request.form.get('temp_max') else None,
+                'alerta_ativo': request.form.get('alerta_ativo') == 'on',
+                'status_teste': None,
+                'ativo': True
+            }
+            sensores.append(novo_sensor)
+            flash(f'Sensor {novo_sensor["nome"]} criado com sucesso!', 'success')
+            return redirect(url_for('ti_sensores'))
+        
+        elif acao == 'editar':
+            sensor_id = int(request.form.get('sensor_id'))
+            sensor = get_sensor_por_id(sensor_id)
+            if sensor:
+                sensor['nome'] = request.form.get('nome')
+                tipo_com = request.form.get('tipo_comunicacao')
+                sensor['tipo_comunicacao'] = tipo_com
+                
+                config = {}
+                if tipo_com == 'rede':
+                    config = {
+                        'ip': request.form.get('ip'),
+                        'porta': request.form.get('porta'),
+                        'canal': request.form.get('canal')
+                    }
+                elif tipo_com == 'usb_com':
+                    config = {
+                        'porta_com': request.form.get('porta_com'),
+                        'baud_rate': request.form.get('baud_rate')
+                    }
+                elif tipo_com == 'i2c':
+                    config = {
+                        'endereco': request.form.get('endereco'),
+                        'barramento': request.form.get('barramento')
+                    }
+                elif tipo_com == 'serial':
+                    config = {
+                        'porta': request.form.get('porta_serial'),
+                        'baud_rate': request.form.get('baud_rate_serial')
+                    }
+                elif tipo_com == 'rs232':
+                    config = {
+                        'porta': request.form.get('porta_rs232'),
+                        'baud_rate': request.form.get('baud_rate_rs232'),
+                        'data_bits': request.form.get('data_bits'),
+                        'stop_bits': request.form.get('stop_bits'),
+                        'parity': request.form.get('parity')
+                    }
+                elif tipo_com == 'modbus':
+                    config = {
+                        'endereco_escravo': request.form.get('endereco_escravo'),
+                        'porta': request.form.get('porta_modbus'),
+                        'baud_rate': request.form.get('baud_rate_modbus')
+                    }
+                
+                sensor['config'] = config
+                sensor['temp_min'] = int(request.form.get('temp_min')) if request.form.get('temp_min') else None
+                sensor['temp_max'] = int(request.form.get('temp_max')) if request.form.get('temp_max') else None
+                sensor['alerta_ativo'] = request.form.get('alerta_ativo') == 'on'
+                
+                flash('Sensor atualizado!', 'success')
+            return redirect(url_for('ti_sensores'))
+        
+        elif acao == 'excluir':
+            sensor_id = int(request.form.get('sensor_id'))
+            sensor = get_sensor_por_id(sensor_id)
+            if sensor:
+                # Verificar se algum equipamento usa este sensor
+                em_uso = any(e.get('sensor_id') == sensor_id for e in equipamentos)
+                if em_uso:
+                    flash('Não é possível excluir! Este sensor está sendo usado por um equipamento.', 'danger')
+                else:
+                    sensores.remove(sensor)
+                    flash('Sensor excluído!', 'success')
+            return redirect(url_for('ti_sensores'))
+        
+        elif acao == 'ativar_desativar':
+            sensor_id = int(request.form.get('sensor_id'))
+            sensor = get_sensor_por_id(sensor_id)
+            if sensor:
+                sensor['ativo'] = not sensor.get('ativo', True)
+                status = 'ativado' if sensor['ativo'] else 'desativado'
+                flash(f'Sensor {status}!', 'success')
+            return redirect(url_for('ti_sensores'))
+    
+    return render_template('ti_sensores.html', sensores=sensores)
+
+@app.route('/ti/sensores/testar/<int:sensor_id>', methods=['POST'])
+@login_required
+@tipo_usuario_required('ti')
+def testar_sensor(sensor_id):
+    sensor = get_sensor_por_id(sensor_id)
+    if not sensor:
+        return jsonify({'sucesso': False, 'mensagem': 'Sensor não encontrado'}), 404
+    
+    # Simulação de teste de comunicação
+    import random
+    sucesso = random.choice([True, True, True, False])  # 75% de chance de sucesso
+    
+    if sucesso:
+        sensor['status_teste'] = {
+            'status': 'sucesso',
+            'mensagem': 'Comunicação estabelecida com sucesso!',
+            'temperatura_lida': round(random.uniform(20, 30), 2),
+            'data_teste': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        return jsonify({
+            'sucesso': True,
+            'mensagem': 'Sensor testado com sucesso!',
+            'temperatura': sensor['status_teste']['temperatura_lida']
+        })
+    else:
+        sensor['status_teste'] = {
+            'status': 'erro',
+            'mensagem': 'Falha na comunicação. Verifique as configurações.',
+            'data_teste': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        return jsonify({
+            'sucesso': False,
+            'mensagem': 'Falha na comunicação. Verifique as configurações.'
+        }), 400
 
 @app.route('/manutencao', methods=['GET', 'POST'])
 @login_required
@@ -352,7 +588,6 @@ def higienizacao():
             flash(f'Higienização iniciada em {equip["nome"]}!', 'success')
         
         elif acao == 'finalizar':
-            # Finaliza higienização e envia para qualidade
             processo_finalizado = {
                 'id': len(processos_finalizados) + 1,
                 'equipamento': equip['nome'],
@@ -380,7 +615,6 @@ def qualidade():
         processo_id = int(request.form.get('processo_id'))
         resultado = request.form.get('resultado')
         
-        # Encontrar processo
         processo = next((p for p in processos_finalizados if p['id'] == processo_id), None)
         
         if processo:
@@ -388,7 +622,6 @@ def qualidade():
             processo['data_analise'] = datetime.now().strftime('%Y-%m-%d %H:%M')
             processo['analisado_por'] = session['nome_usuario']
             
-            # Liberar equipamento
             equip = get_equipamento_por_id(processo['equipamento_id'])
             if equip:
                 if resultado == 'aprovado':
@@ -405,7 +638,7 @@ def qualidade():
 @app.route('/relatorios')
 @login_required
 def relatorios():
-    return render_template('relatorios.html', relatorios=relatorios_personalizados, equipamentos=equipamentos)
+    return render_template('relatorios.html', relatorios=relatorios_personalizados, equipamentos=equipamentos, layouts=layouts_relatorios)
 
 @app.route('/gerar_relatorio', methods=['POST'])
 @login_required
@@ -413,16 +646,13 @@ def gerar_relatorio():
     id_relatorio = request.form.get('id_relatorio')
     formato = request.form.get('formato')
     
-    # Buscar relatório
     relatorio = relatorios_personalizados.get(id_relatorio)
     if not relatorio:
         flash('Relatório não encontrado!', 'danger')
         return redirect(url_for('relatorios'))
     
-    # Aplicar filtros
     dados = processos_finalizados.copy()
     
-    # Filtro de data
     data_inicio = request.form.get('filtro_data_inicio')
     data_fim = request.form.get('filtro_data_fim')
     
@@ -431,7 +661,6 @@ def gerar_relatorio():
     if data_fim:
         dados = [d for d in dados if d.get('data_finalizacao', '')[:10] <= data_fim]
     
-    # Filtro de equipamento
     equip_id = request.form.get('filtro_equipamento_id')
     if equip_id:
         dados = [d for d in dados if d.get('equipamento_id') == int(equip_id)]
@@ -440,25 +669,24 @@ def gerar_relatorio():
         flash('Nenhum dado disponível para gerar relatório!', 'warning')
         return redirect(url_for('relatorios'))
     
-    # Preparar dados para exportação
     dados_exportacao = []
     for processo in dados:
         linha = {}
-        if 'equipamento' in relatorio['campos']:
-            linha['Equipamento'] = processo.get('equipamento', '')
-        if 'produto' in relatorio['campos']:
-            linha['Produto'] = processo.get('produto', '')
-        if 'ordem_producao' in relatorio['campos']:
-            linha['Ordem de Produção'] = processo.get('ordem_producao', '')
-        if 'responsavel' in relatorio['campos']:
-            linha['Responsável'] = processo.get('responsavel', '')
-        if 'data_finalizacao' in relatorio['campos']:
-            linha['Data Finalização'] = processo.get('data_finalizacao', '')
-        if 'status_qualidade' in relatorio['campos']:
-            linha['Status Qualidade'] = processo.get('status_qualidade', '').upper()
+        for campo in relatorio['campos']:
+            if campo == 'equipamento':
+                linha['Equipamento'] = processo.get('equipamento', '')
+            elif campo == 'produto':
+                linha['Produto'] = processo.get('produto', '')
+            elif campo == 'ordem_producao':
+                linha['Ordem de Produção'] = processo.get('ordem_producao', '')
+            elif campo == 'responsavel':
+                linha['Responsável'] = processo.get('responsavel', '')
+            elif campo == 'data_finalizacao':
+                linha['Data Finalização'] = processo.get('data_finalizacao', '')
+            elif campo == 'status_qualidade':
+                linha['Status Qualidade'] = processo.get('status_qualidade', '').upper()
         dados_exportacao.append(linha)
     
-    # Gerar Excel
     if formato == 'excel':
         df = pd.DataFrame(dados_exportacao)
         output = BytesIO()
@@ -473,13 +701,11 @@ def gerar_relatorio():
             download_name=f'{relatorio["nome"]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
         )
     
-    # Gerar PDF
     elif formato == 'pdf':
         output = BytesIO()
         doc = SimpleDocTemplate(output, pagesize=A4)
         elements = []
         
-        # Estilos
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CustomTitle',
@@ -490,27 +716,21 @@ def gerar_relatorio():
             alignment=TA_CENTER
         )
         
-        # Título
         elements.append(Paragraph(relatorio['nome'], title_style))
         elements.append(Spacer(1, 0.3*inch))
         
-        # Informações do relatório
         info_style = ParagraphStyle('Info', parent=styles['Normal'], fontSize=9, textColor=colors.grey)
         elements.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", info_style))
         elements.append(Paragraph(f"Usuário: {session.get('nome_usuario', 'N/A')}", info_style))
         elements.append(Spacer(1, 0.3*inch))
         
-        # Tabela de dados
         if dados_exportacao:
-            # Cabeçalhos
             headers = list(dados_exportacao[0].keys())
             table_data = [headers]
             
-            # Dados
             for row in dados_exportacao:
                 table_data.append([str(row.get(h, '')) for h in headers])
             
-            # Criar tabela
             table = Table(table_data)
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4A90E2')),
@@ -553,12 +773,16 @@ def gerenciar_usuarios():
                 flash('Usuário já existe!', 'danger')
                 return redirect(url_for('gerenciar_usuarios'))
             
-            # Criar permissões
             permissoes = {}
             for key in request.form.keys():
                 if key.startswith('perm_'):
                     perm_name = key.replace('perm_', '')
                     permissoes[perm_name] = True
+            
+            grupo_nome = request.form.get('grupo')
+            if grupo_nome and grupo_nome in grupos_usuarios:
+                grupo_perms = grupos_usuarios[grupo_nome]['permissoes']
+                permissoes.update(grupo_perms)
             
             usuarios[username] = {
                 'senha': request.form.get('senha'),
@@ -566,7 +790,7 @@ def gerenciar_usuarios():
                 'email': request.form.get('email'),
                 'tipo': request.form.get('tipo'),
                 'ativo': True,
-                'grupo': None,
+                'grupo': grupo_nome if grupo_nome else None,
                 'permissoes': permissoes
             }
             flash(f'Usuário {username} criado com sucesso!', 'success')
@@ -577,22 +801,26 @@ def gerenciar_usuarios():
                 flash('Usuário não encontrado!', 'danger')
                 return redirect(url_for('gerenciar_usuarios'))
             
-            # Atualizar dados
             usuarios[username]['nome'] = request.form.get('nome')
             usuarios[username]['email'] = request.form.get('email')
             usuarios[username]['tipo'] = request.form.get('tipo')
             
-            # Atualizar senha apenas se fornecida
             senha = request.form.get('senha')
             if senha:
                 usuarios[username]['senha'] = senha
             
-            # Atualizar permissões
             permissoes = {}
             for key in request.form.keys():
                 if key.startswith('perm_'):
                     perm_name = key.replace('perm_', '')
                     permissoes[perm_name] = True
+            
+            grupo_nome = request.form.get('grupo')
+            if grupo_nome and grupo_nome in grupos_usuarios:
+                grupo_perms = grupos_usuarios[grupo_nome]['permissoes']
+                permissoes.update(grupo_perms)
+            
+            usuarios[username]['grupo'] = grupo_nome if grupo_nome else None
             usuarios[username]['permissoes'] = permissoes
             
             flash(f'Usuário {username} atualizado!', 'success')
@@ -604,14 +832,11 @@ def gerenciar_usuarios():
                 status = 'ativado' if usuarios[username]['ativo'] else 'desativado'
                 flash(f'Usuário {username} {status}!', 'success')
         
-        elif acao == 'alterar_senha':
+        elif acao == 'resetar_senha':
             username = request.form.get('username')
-            nova_senha = request.form.get('nova_senha')
-            if username in usuarios and nova_senha:
-                usuarios[username]['senha'] = nova_senha
-                flash(f'Senha de {username} alterada com sucesso!', 'success')
-            else:
-                flash('Erro ao alterar senha!', 'danger')
+            if username in usuarios:
+                usuarios[username]['senha'] = '123'
+                flash(f'Senha de {username} resetada para "123"!', 'success')
         
         return redirect(url_for('gerenciar_usuarios'))
     
@@ -630,7 +855,6 @@ def gerenciar_grupos():
                 flash('Grupo já existe!', 'danger')
                 return redirect(url_for('gerenciar_grupos'))
             
-            # Criar permissões
             permissoes = {}
             for key in request.form.keys():
                 if key.startswith('perm_'):
@@ -653,14 +877,12 @@ def gerenciar_grupos():
             if nome_antigo in grupos_usuarios:
                 grupo = grupos_usuarios[nome_antigo]
                 
-                # Atualizar permissões
                 permissoes = {}
                 for key in request.form.keys():
                     if key.startswith('perm_'):
                         perm_name = key.replace('perm_', '')
                         permissoes[perm_name] = True
                 
-                # Se o nome mudou, criar novo e remover antigo
                 if nome_antigo != nome_novo:
                     grupos_usuarios[nome_novo] = {
                         'id': grupo['id'],
@@ -670,6 +892,11 @@ def gerenciar_grupos():
                         'permissoes': permissoes
                     }
                     del grupos_usuarios[nome_antigo]
+                    
+                    # Atualizar usuários que usam este grupo
+                    for user in usuarios.values():
+                        if user.get('grupo') == nome_antigo:
+                            user['grupo'] = nome_novo
                 else:
                     grupos_usuarios[nome_antigo]['descricao'] = request.form.get('descricao', '')
                     grupos_usuarios[nome_antigo]['cor'] = request.form.get('cor', '#4A90E2')
@@ -681,11 +908,15 @@ def gerenciar_grupos():
             nome = request.form.get('nome_grupo')
             if nome in grupos_usuarios:
                 del grupos_usuarios[nome]
+                # Remover grupo dos usuários
+                for user in usuarios.values():
+                    if user.get('grupo') == nome:
+                        user['grupo'] = None
                 flash(f'Grupo {nome} excluído!', 'success')
         
         return redirect(url_for('gerenciar_grupos'))
     
-    return render_template('grupos.html', grupos=grupos_usuarios)
+    return render_template('grupos.html', grupos=grupos_usuarios, relatorios=relatorios_personalizados)
 
 @app.route('/gerenciar_relatorios', methods=['GET', 'POST'])
 @login_required
@@ -700,7 +931,6 @@ def gerenciar_relatorios():
                 flash('ID de relatório já existe!', 'danger')
                 return redirect(url_for('gerenciar_relatorios'))
             
-            # Pegar campos selecionados
             campos = request.form.getlist('campos')
             
             relatorios_personalizados[id_rel] = {
@@ -715,6 +945,8 @@ def gerenciar_relatorios():
                     {'nome': 'equipamento_id', 'label': 'Equipamento', 'tipo': 'select'}
                 ],
                 'formatos': request.form.getlist('formatos'),
+                'layout_excel': request.form.get('layout_excel'),
+                'layout_pdf': request.form.get('layout_pdf'),
                 'ativo': True
             }
             flash(f'Relatório {request.form.get("nome")} criado!', 'success')
@@ -729,6 +961,8 @@ def gerenciar_relatorios():
                 relatorios_personalizados[id_rel]['tipo'] = request.form.get('tipo')
                 relatorios_personalizados[id_rel]['campos'] = campos
                 relatorios_personalizados[id_rel]['formatos'] = request.form.getlist('formatos')
+                relatorios_personalizados[id_rel]['layout_excel'] = request.form.get('layout_excel')
+                relatorios_personalizados[id_rel]['layout_pdf'] = request.form.get('layout_pdf')
                 flash('Relatório atualizado!', 'success')
         
         elif acao == 'ativar_desativar':
@@ -746,7 +980,112 @@ def gerenciar_relatorios():
         
         return redirect(url_for('gerenciar_relatorios'))
     
-    return render_template('config_relatorios.html', relatorios=relatorios_personalizados)
+    return render_template('config_relatorios.html', relatorios=relatorios_personalizados, layouts=layouts_relatorios)
+
+@app.route('/gerenciar_layouts', methods=['GET', 'POST'])
+@login_required
+@tipo_usuario_required('ti')
+def gerenciar_layouts():
+    if request.method == 'POST':
+        acao = request.form.get('acao')
+        
+        if acao == 'adicionar':
+            id_layout = request.form.get('id_layout')
+            if id_layout in layouts_relatorios:
+                flash('ID de layout já existe!', 'danger')
+                return redirect(url_for('gerenciar_layouts'))
+            
+            tipo = request.form.get('tipo')
+            config = {}
+            
+            if tipo == 'excel':
+                config = {
+                    'cabecalho': {
+                        'titulo': request.form.get('titulo'),
+                        'subtitulo': request.form.get('subtitulo'),
+                        'cor_fundo': request.form.get('cor_fundo'),
+                        'cor_texto': request.form.get('cor_texto')
+                    },
+                    'tabela': {
+                        'cor_cabecalho': request.form.get('cor_cabecalho'),
+                        'cor_linhas_alternadas': request.form.get('cor_linhas_alternadas') == 'on'
+                    }
+                }
+            elif tipo == 'pdf':
+                config = {
+                    'cabecalho': {
+                        'titulo': request.form.get('titulo'),
+                        'subtitulo': request.form.get('subtitulo'),
+                        'logo': None
+                    },
+                    'rodape': {
+                        'texto': request.form.get('rodape_texto'),
+                        'numeracao': request.form.get('rodape_numeracao') == 'on'
+                    }
+                }
+            
+            layouts_relatorios[id_layout] = {
+                'id': id_layout,
+                'nome': request.form.get('nome'),
+                'tipo': tipo,
+                'config': config
+            }
+            flash(f'Layout {request.form.get("nome")} criado!', 'success')
+        
+        elif acao == 'editar':
+            id_layout = request.form.get('id_layout')
+            if id_layout in layouts_relatorios:
+                tipo = request.form.get('tipo')
+                config = {}
+                
+                if tipo == 'excel':
+                    config = {
+                        'cabecalho': {
+                            'titulo': request.form.get('titulo'),
+                            'subtitulo': request.form.get('subtitulo'),
+                            'cor_fundo': request.form.get('cor_fundo'),
+                            'cor_texto': request.form.get('cor_texto')
+                        },
+                        'tabela': {
+                            'cor_cabecalho': request.form.get('cor_cabecalho'),
+                            'cor_linhas_alternadas': request.form.get('cor_linhas_alternadas') == 'on'
+                        }
+                    }
+                elif tipo == 'pdf':
+                    config = {
+                        'cabecalho': {
+                            'titulo': request.form.get('titulo'),
+                            'subtitulo': request.form.get('subtitulo'),
+                            'logo': None
+                        },
+                        'rodape': {
+                            'texto': request.form.get('rodape_texto'),
+                            'numeracao': request.form.get('rodape_numeracao') == 'on'
+                        }
+                    }
+                
+                layouts_relatorios[id_layout]['nome'] = request.form.get('nome')
+                layouts_relatorios[id_layout]['tipo'] = tipo
+                layouts_relatorios[id_layout]['config'] = config
+                flash('Layout atualizado!', 'success')
+        
+        elif acao == 'excluir':
+            id_layout = request.form.get('id_layout')
+            if id_layout in layouts_relatorios:
+                # Verificar se algum relatório usa este layout
+                em_uso = any(
+                    r.get('layout_excel') == id_layout or r.get('layout_pdf') == id_layout
+                    for r in relatorios_personalizados.values()
+                )
+                if em_uso:
+                    flash('Não é possível excluir! Este layout está sendo usado por um relatório.', 'danger')
+                else:
+                    del layouts_relatorios[id_layout]
+                    flash('Layout excluído!', 'success')
+        
+        return redirect(url_for('gerenciar_layouts'))
+    
+    return render_template('layouts.html', layouts=layouts_relatorios)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,170 +1,21 @@
 {% extends "base.html" %}
-
 {% block title %}Painel do Operador{% endblock %}
-
-{% block extra_css %}
-<style>
-    .page-header {
-        background: white;
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .page-title {
-        font-size: 2rem;
-        color: var(--primary);
-        margin-bottom: 0.5rem;
-    }
-
-    .page-description {
-        color: #64748b;
-    }
-
-    .equipamentos-list {
-        display: grid;
-        gap: 1.5rem;
-    }
-
-    .equip-item {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-        transition: all 0.3s;
-    }
-
-    .equip-item:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-        transform: translateX(5px);
-    }
-
-    .equip-item.bloqueado {
-        opacity: 0.6;
-        background: #f8fafc;
-    }
-
-    .equip-icon-large {
-        font-size: 4rem;
-        text-align: center;
-        min-width: 80px;
-    }
-
-    .equip-info {
-        flex: 1;
-    }
-
-    .equip-name-large {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-    }
-
-    .equip-meta {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        margin-top: 0.5rem;
-    }
-
-    .meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #64748b;
-        font-size: 0.9rem;
-    }
-
-    .equip-actions {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .bloqueio-info {
-        background: #fef3c7;
-        border-left: 4px solid var(--warning);
-        padding: 1rem;
-        margin-top: 1rem;
-        border-radius: 0 8px 8px 0;
-        font-size: 0.9rem;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">👨‍🔧 Painel do Operador</h1>
-    <p class="page-description">Gerencie os processos de produção dos equipamentos</p>
+    <p class="page-description">Gerencie os processos de produção</p>
 </div>
-
 <div class="card">
-    <h2 class="card-title">Equipamentos Disponíveis</h2>
-    <div class="equipamentos-list">
+    <h2 class="card-title">Equipamentos</h2>
+    <div style="display: grid; gap: 1.5rem;">
         {% for equip in equipamentos %}
-        <div class="equip-item {% if equip.status in ['manutencao', 'higienizacao'] %}bloqueado{% endif %}">
-            <div class="equip-icon-large">
-                {{ equip.icone }}
+        <div style="background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 2rem;">
+            <div style="font-size: 4rem;">{{ equip.icone }}</div>
+            <div style="flex: 1;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">{{ equip.nome }}</h3>
+                <span class="badge badge-{{ get_cor_status(equip.status) }}">{{ equip.status | upper }}</span>
             </div>
-
-            <div class="equip-info">
-                <h3 class="equip-name-large">{{ equip.nome }}</h3>
-                
-                <div class="equip-meta">
-                    <span class="meta-item">
-                        <strong>Status:</strong>
-                        {% if equip.status == 'livre' %}
-                            <span class="badge badge-success">Livre</span>
-                        {% elif equip.status == 'ocupada' %}
-                            <span class="badge badge-danger">Ocupada</span>
-                        {% elif equip.status == 'manutencao' %}
-                            <span class="badge badge-warning">Manutenção</span>
-                        {% elif equip.status == 'higienizacao' %}
-                            <span class="badge badge-info">Higienização</span>
-                        {% else %}
-                            <span class="badge badge-secondary">{{ equip.status | capitalize }}</span>
-                        {% endif %}
-                    </span>
-
-                    {% if equip.processo %}
-                    <span class="meta-item">
-                        <strong>📦 Produto:</strong> {{ equip.processo.produto }}
-                    </span>
-                    <span class="meta-item">
-                        <strong>⏱️ Duração:</strong> {{ equip.processo.duracao }}
-                    </span>
-                    {% endif %}
-                </div>
-
-                {% if equip.status == 'manutencao' %}
-                <div class="bloqueio-info">
-                    <strong>🔧 Em Manutenção</strong><br>
-                    Motivo: {{ equip.manutencao.motivo }}<br>
-                    Previsão de liberação: {{ equip.manutencao.previsao }}
-                </div>
-                {% elif equip.status == 'higienizacao' %}
-                <div class="bloqueio-info">
-                    <strong>🧼 Em Higienização</strong><br>
-                    Previsão de liberação: {{ equip.higienizacao.previsao }}
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="equip-actions">
-                {% if equip.status not in ['manutencao', 'higienizacao'] %}
-                <a href="{{ url_for('gerenciar', equip_id=equip.id) }}" 
-                   class="btn btn-primary">
-                    Gerenciar
-                </a>
-                {% else %}
-                <button class="btn btn-secondary" disabled>
-                    Bloqueado
-                </button>
-                {% endif %}
-            </div>
+            <a href="{{ url_for('gerenciar', equip_id=equip.id) }}" class="btn btn-primary">Gerenciar</a>
         </div>
         {% endfor %}
     </div>

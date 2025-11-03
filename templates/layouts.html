@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Gerenciamento de Layouts{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2rem; color: var(--primary);">🎨 Gerenciamento de Layouts</h1>
+        <p><a href="{{ url_for('gerenciar_relatorios') }}" style="color: var(--primary);">← Voltar</a></p>
+    </div>
+    <button onclick="openAddModal()" class="btn btn-success">➕ Novo Layout</button>
+</div>
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--primary); color: white;">
+            <tr>
+                <th style="padding: 1rem; text-align: left;">Nome</th>
+                <th style="padding: 1rem; text-align: left;">Tipo</th>
+                <th style="padding: 1rem; text-align: left;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id, layout in layouts.items() %}
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 1rem;"><strong>{{ layout.nome }}</strong></td>
+                <td style="padding: 1rem;"><span class="badge badge-info">{{ layout.tipo | upper }}</span></td>
+                <td style="padding: 1rem;">
+                    <button onclick="editLayout('{{ id }}')" class="btn btn-primary" style="padding: 0.5rem;">✏️</button>
+                    <button onclick="deleteLayout('{{ id }}')" class="btn btn-danger" style="padding: 0.5rem;">🗑️</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div id="layoutModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 700px; width: 95%;">
+        <h2 id="modalTitle">➕ Novo Layout</h2>
+        <form method="POST" id="layoutForm">
+            <input type="hidden" name="acao" id="formAcao" value="adicionar">
+            <input type="hidden" name="id_layout" id="formIdLayout">
+            <div class="form-group">
+                <label class="form-label">ID *</label>
+                <input type="text" name="id_layout" id="formId" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nome *</label>
+                <input type="text" name="nome" id="formNome" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipo *</label>
+                <select name="tipo" id="formTipo" class="form-control" onchange="updateFields()" required>
+                    <option value="">Selecione...</option>
+                    <option value="excel">Excel</option>
+                    <option value="pdf">PDF</option>
+                </select>
+            </div>
+            <div id="configFields"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+const layoutsData = {{ layouts | tojson | safe }};
+function updateFields() {
+    const tipo = document.getElementById('formTipo').value;
+    const container = document.getElementById('configFields');
+    if (tipo === 'excel') {
+        container.innerHTML = `
+            <div class="form-group"><label class="form-label">Título</label><input type="text" name="titulo" id="formTitulo" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Subtítulo</label><input type="text" name="subtitulo" id="formSubtitulo" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Cor Fundo</label><input type="color" name="cor_fundo" id="formCorFundo" class="form-control" value="#4A90E2"></div>
+            <div class="form-group"><label class="form-label">Cor Texto</label><input type="color" name="cor_texto" id="formCorTexto" class="form-control" value="#FFFFFF"></div>
+            <div class="form-group"><label class="form-label">Cor Cabeçalho</label><input type="color" name="cor_cabecalho" id="formCorCabecalho" class="form-control" value="#4A90E2"></div>
+            <label><input type="checkbox" name="cor_linhas_alternadas"> Linhas alternadas</label>
+        `;
+    } else if (tipo === 'pdf') {
+        container.innerHTML = `
+            <div class="form-group"><label class="form-label">Título</label><input type="text" name="titulo" id="formTitulo" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Subtítulo</label><input type="text" name="subtitulo" id="formSubtitulo" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Texto Rodapé</label><input type="text" name="rodape_texto" id="formRodapeTexto" class="form-control"></div>
+            <label><input type="checkbox" name="rodape_numeracao"> Numeração de páginas</label>
+        `;
+    }
+}
+function openAddModal() {
+    document.getElementById('layoutForm').reset();
+    document.getElementById('formAcao').value = 'adicionar';
+    document.getElementById('layoutModal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('layoutModal').style.display = 'none';
+}
+function editLayout(id) {
+    const layout = layoutsData[id];
+    document.getElementById('formAcao').value = 'editar';
+    document.getElementById('formIdLayout').value = id;
+    document.getElementById('formId').value = id;
+    document.getElementById('formNome').value = layout.nome;
+    document.getElementById('formTipo').value = layout.tipo;
+    updateFields();
+    document.getElementById('layoutModal').style.display = 'flex';
+}
+function deleteLayout(id) {
+    if (confirm('Confirma exclusão?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = '<input type="hidden" name="acao" value="excluir"><input type="hidden" name="id_layout" value="'+id+'">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

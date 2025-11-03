@@ -1,24 +1,14 @@
 {% extends "base.html" %}
-
 {% block title %}Gerenciamento de Usuários{% endblock %}
-
 {% block content %}
 <div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
-        👥 Gerenciamento de Usuários
-    </h1>
+    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">👥 Gerenciamento de Usuários</h1>
     <p style="color: #64748b;">Criação de usuários e controle granular de permissões</p>
+    <p><a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar para TI</a></p>
 </div>
-
-<div style="margin-bottom: 2rem;">
-    <button onclick="openAddUserModal()" class="btn btn-success">
-        ➕ Criar Novo Usuário
-    </button>
-</div>
-
+<div style="margin-bottom: 2rem;"><button onclick="openAddUserModal()" class="btn btn-success">➕ Criar Novo Usuário</button></div>
 <div class="card">
     <h2 class="card-title">👤 Usuários Cadastrados</h2>
-    
     <table style="width: 100%; border-collapse: collapse;">
         <thead style="background: var(--primary); color: white;">
             <tr>
@@ -26,8 +16,8 @@
                 <th style="padding: 1rem; text-align: left;">Nome</th>
                 <th style="padding: 1rem; text-align: left;">E-mail</th>
                 <th style="padding: 1rem; text-align: left;">Tipo</th>
+                <th style="padding: 1rem; text-align: left;">Grupo</th>
                 <th style="padding: 1rem; text-align: left;">Status</th>
-                <th style="padding: 1rem; text-align: left;">Permissões</th>
                 <th style="padding: 1rem; text-align: left;">Ações</th>
             </tr>
         </thead>
@@ -37,37 +27,14 @@
                 <td style="padding: 1rem;"><strong>{{ username }}</strong></td>
                 <td style="padding: 1rem;">{{ user.nome }}</td>
                 <td style="padding: 1rem;"><small>{{ user.email }}</small></td>
+                <td style="padding: 1rem;"><span class="badge badge-info">{{ user.tipo | capitalize }}</span></td>
+                <td style="padding: 1rem;">{% if user.grupo %}<span class="badge badge-secondary">{{ user.grupo }}</span>{% else %}-{% endif %}</td>
+                <td style="padding: 1rem;">{% if user.ativo %}<span class="badge badge-success">✅ Ativo</span>{% else %}<span class="badge badge-secondary">❌ Inativo</span>{% endif %}</td>
                 <td style="padding: 1rem;">
-                    <span class="badge badge-info">{{ user.tipo | capitalize }}</span>
-                </td>
-                <td style="padding: 1rem;">
-                    {% if user.ativo %}
-                        <span class="badge badge-success">✅ Ativo</span>
-                    {% else %}
-                        <span class="badge badge-secondary">❌ Inativo</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 1rem;">
-                    <button onclick="showPermissions('{{ username }}')" class="btn btn-info" style="padding: 0.5rem 0.75rem;">
-                        🔐 Ver Permissões
-                    </button>
-                </td>
-                <td style="padding: 1rem;">
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick='openEditUserModal("{{ username }}")' 
-                                class="btn btn-primary" 
-                                style="padding: 0.5rem 0.75rem;">
-                            ✏️
-                        </button>
-                        <form method="POST" style="display: inline;">
-                            <input type="hidden" name="acao" value="ativar_desativar">
-                            <input type="hidden" name="username" value="{{ username }}">
-                            <button type="submit" 
-                                    class="btn {% if user.ativo %}btn-secondary{% else %}btn-success{% endif %}" 
-                                    style="padding: 0.5rem 0.75rem;">
-                                {% if user.ativo %}🔒{% else %}🔓{% endif %}
-                            </button>
-                        </form>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button onclick='editUser({{ user | tojson }}, "{{ username }}")' class="btn btn-primary" style="padding: 0.5rem 0.75rem;">✏️</button>
+                        <form method="POST" style="display: inline;"><input type="hidden" name="acao" value="ativar_desativar"><input type="hidden" name="username" value="{{ username }}"><button type="submit" class="btn {% if user.ativo %}btn-secondary{% else %}btn-success{% endif %}" style="padding: 0.5rem 0.75rem;">{% if user.ativo %}🔒{% else %}🔓{% endif %}</button></form>
+                        <form method="POST" style="display: inline;"><input type="hidden" name="acao" value="resetar_senha"><input type="hidden" name="username" value="{{ username }}"><button type="submit" class="btn btn-warning" style="padding: 0.5rem 0.75rem;" onclick="return confirm('Resetar senha para 123?')">🔑</button></form>
                     </div>
                 </td>
             </tr>
@@ -75,308 +42,103 @@
         </tbody>
     </table>
 </div>
-
-<!-- Modal Adicionar/Editar Usuário -->
 <div id="userModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
     <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 900px; width: 95%; margin: 2rem auto; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 id="userModalTitle" style="font-size: 1.5rem; color: var(--primary); margin: 0;">➕ Criar Usuário</h2>
             <span onclick="closeUserModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
         </div>
-        
         <form method="POST" id="userForm">
             <input type="hidden" name="acao" id="userAcao" value="adicionar">
-            
             <div style="background: white; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 1.5rem;">
                 <h3 style="margin-bottom: 1rem;">👤 Dados do Usuário</h3>
-                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label class="form-label">Nome de Usuário * <small style="color: #64748b;">(login)</small></label>
-                        <input type="text" 
-                               name="username" 
-                               id="userUsername"
-                               class="form-control"
-                               placeholder="joao.silva"
-                               required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Nome Completo *</label>
-                        <input type="text" 
-                               name="nome" 
-                               id="userNome"
-                               class="form-control"
-                               placeholder="João Silva"
-                               required>
-                    </div>
+                    <div class="form-group"><label class="form-label">Nome de Usuário *</label><input type="text" name="username" id="userUsername" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Nome Completo *</label><input type="text" name="nome" id="userNome" class="form-control" required></div>
                 </div>
-
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label class="form-label">E-mail *</label>
-                        <input type="email" 
-                               name="email" 
-                               id="userEmail"
-                               class="form-control"
-                               placeholder="joao@empresa.com"
-                               required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Senha * <small style="color: #64748b;" id="senhaHint">(deixe em branco para manter)</small></label>
-                        <input type="password" 
-                               name="senha" 
-                               id="userSenha"
-                               class="form-control"
-                               placeholder="••••••••">
-                    </div>
+                    <div class="form-group"><label class="form-label">E-mail *</label><input type="email" name="email" id="userEmail" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Senha *</label><input type="password" name="senha" id="userSenha" class="form-control"></div>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">Tipo de Usuário *</label>
-                    <select name="tipo" id="userTipo" class="form-control" required>
-                        <option value="">Selecione...</option>
-                        <option value="operador">Operador</option>
-                        <option value="manutencao">Manutenção</option>
-                        <option value="higienizacao">Higienização</option>
-                        <option value="qualidade">Qualidade</option>
-                        <option value="ti">TI / Administrador</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="gerente">Gerente</option>
-                    </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group"><label class="form-label">Tipo *</label><select name="tipo" id="userTipo" class="form-control" required><option value="">Selecione...</option><option value="operador">Operador</option><option value="manutencao">Manutenção</option><option value="higienizacao">Higienização</option><option value="qualidade">Qualidade</option><option value="ti">TI</option></select></div>
+                    <div class="form-group"><label class="form-label">Grupo</label><select name="grupo" id="userGrupo" class="form-control"><option value="">Nenhum</option>{% for nome, grupo in grupos.items() %}<option value="{{ nome }}">{{ grupo.nome }}</option>{% endfor %}</select></div>
                 </div>
             </div>
-
             <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--warning);">
                 <h3 style="margin-bottom: 1rem;">🔐 Permissões Detalhadas</h3>
-                <p style="color: #64748b; margin-bottom: 1.5rem;">
-                    Marque as permissões que este usuário terá no sistema
-                </p>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                    <!-- Dashboard -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">📊 Dashboard</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_dashboard" value="on">
-                            <span>Acessar Dashboard</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_dashboard">Acessar Dashboard</label>
                     </div>
-
-                    <!-- Operador -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">👨‍🔧 Operador</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_operador" value="on">
-                            <span>Acessar Painel</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_iniciar_processo" value="on">
-                            <span>Iniciar Processo</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_editar_processo" value="on">
-                            <span>Editar Processo</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_finalizar_processo" value="on">
-                            <span>Finalizar Processo</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_operador">Acessar Painel</label>
                     </div>
-
-                    <!-- TI -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
-                        <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">💻 TI / Configurações</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_ti" value="on">
-                            <span>Acessar Painel TI</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_criar_equipamento" value="on">
-                            <span>Criar Equipamento</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_editar_equipamento" value="on">
-                            <span>Editar Equipamento</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_excluir_equipamento" value="on">
-                            <span>Excluir Equipamento</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_criar_usuario" value="on">
-                            <span>Criar Usuário</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_editar_usuario" value="on">
-                            <span>Editar Usuário</span>
-                        </label>
+                        <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">💻 TI</strong>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_ti">Acessar TI</label>
                     </div>
-
-                    <!-- Manutenção -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--warning); display: block; margin-bottom: 0.5rem;">🔧 Manutenção</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_manutencao" value="on">
-                            <span>Acessar Painel</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_iniciar_manutencao" value="on">
-                            <span>Iniciar Manutenção</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_finalizar_manutencao" value="on">
-                            <span>Finalizar Manutenção</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_manutencao">Acessar Painel</label>
                     </div>
-
-                    <!-- Higienização -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--info); display: block; margin-bottom: 0.5rem;">🧼 Higienização</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_higienizacao" value="on">
-                            <span>Acessar Painel</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_iniciar_higienizacao" value="on">
-                            <span>Iniciar Higienização</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_finalizar_higienizacao" value="on">
-                            <span>Finalizar Higienização</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_higienizacao">Acessar Painel</label>
                     </div>
-
-                    <!-- Qualidade -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--success); display: block; margin-bottom: 0.5rem;">🔬 Qualidade</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_qualidade" value="on">
-                            <span>Acessar Painel</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_aprovar_processo" value="on">
-                            <span>Aprovar Processo</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_rejeitar_processo" value="on">
-                            <span>Rejeitar Processo</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_qualidade">Acessar Painel</label>
                     </div>
-
-                    <!-- Relatórios -->
                     <div style="background: white; padding: 1rem; border-radius: 8px;">
                         <strong style="color: var(--secondary); display: block; margin-bottom: 0.5rem;">📊 Relatórios</strong>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.25rem;">
-                            <input type="checkbox" name="perm_relatorios" value="on">
-                            <span>Acessar Relatórios</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="perm_exportar_relatorios" value="on">
-                            <span>Exportar Relatórios</span>
-                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"><input type="checkbox" name="perm_relatorios">Acessar Relatórios</label>
+                        {% for id, rel in relatorios_personalizados.items() %}
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-left: 1rem;"><input type="checkbox" name="perm_relatorio_{{ id }}">{{ rel.nome }}</label>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
-                <button type="button" onclick="closeUserModal()" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-                <button type="submit" class="btn btn-success" id="userSubmitBtn">
-                    ✅ Criar Usuário
-                </button>
+                <button type="button" onclick="closeUserModal()" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="submit" class="btn btn-success" id="userSubmitBtn">✅ Criar Usuário</button>
             </div>
         </form>
     </div>
 </div>
-
-<!-- Modal Ver Permissões -->
-<div id="permissionsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2 style="font-size: 1.5rem; color: var(--primary); margin: 0;">🔐 Permissões do Usuário</h2>
-            <span onclick="closePermissionsModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
-        </div>
-        <div id="permissionsContent"></div>
-        <button onclick="closePermissionsModal()" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
-            Fechar
-        </button>
-    </div>
-</div>
-
 <script>
 const usuariosData = {{ usuarios | tojson | safe }};
-
 function openAddUserModal() {
     document.getElementById('userModalTitle').textContent = '➕ Criar Novo Usuário';
     document.getElementById('userAcao').value = 'adicionar';
     document.getElementById('userSubmitBtn').textContent = '✅ Criar Usuário';
     document.getElementById('userForm').reset();
     document.getElementById('userUsername').readOnly = false;
-    document.getElementById('senhaHint').textContent = '';
     document.getElementById('userSenha').required = true;
     document.getElementById('userModal').style.display = 'flex';
 }
-
 function editUser(user, username) {
     document.getElementById('userModalTitle').textContent = '✏️ Editar Usuário';
     document.getElementById('userAcao').value = 'editar';
-    document.getElementById('userSubmitBtn').textContent = '💾 Salvar Alterações';
+    document.getElementById('userSubmitBtn').textContent = '💾 Salvar';
     document.getElementById('userUsername').value = username;
     document.getElementById('userUsername').readOnly = true;
     document.getElementById('userNome').value = user.nome;
     document.getElementById('userEmail').value = user.email;
     document.getElementById('userTipo').value = user.tipo;
+    document.getElementById('userGrupo').value = user.grupo || '';
     document.getElementById('userSenha').value = '';
     document.getElementById('userSenha').required = false;
-    document.getElementById('senhaHint').textContent = '(deixe em branco para manter)';
-    
-    // Marca as permissões
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
     for (const [perm, value] of Object.entries(user.permissoes)) {
         const checkbox = document.querySelector(`input[name="perm_${perm}"]`);
-        if (checkbox) {
-            checkbox.checked = value;
-        }
+        if (checkbox) checkbox.checked = value;
     }
-    
     document.getElementById('userModal').style.display = 'flex';
 }
-
-function closeUserModal() {
-    document.getElementById('userModal').style.display = 'none';
-}
-
-function showPermissions(username) {
-    const user = usuariosData[username];
-    let html = '<div style="display: grid; gap: 0.5rem;">';
-    
-    for (const [perm, value] of Object.entries(user.permissoes)) {
-        const icon = value ? '✅' : '❌';
-        const color = value ? 'var(--success)' : '#ccc';
-        html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: ${value ? '#dcfce7' : '#f1f5f9'}; border-radius: 6px;">
-            <span style="color: ${color};">${icon}</span>
-            <span>${perm.replace('_', ' ')}</span>
-        </div>`;
-    }
-    
-    html += '</div>';
-    document.getElementById('permissionsContent').innerHTML = html;
-    document.getElementById('permissionsModal').style.display = 'flex';
-}
-
-function closePermissionsModal() {
-    document.getElementById('permissionsModal').style.display = 'none';
-}
-
-window.onclick = function(event) {
-    if (event.target.id === 'userModal') {
-        closeUserModal();
-    }
-    if (event.target.id === 'permissionsModal') {
-        closePermissionsModal();
-    }
-}
+function closeUserModal() { document.getElementById('userModal').style.display = 'none'; }
+window.onclick = function(event) { if (event.target.id === 'userModal') closeUserModal(); }
 </script>
 {% endblock %}

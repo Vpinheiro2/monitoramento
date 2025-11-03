@@ -1,85 +1,40 @@
 {% extends "base.html" %}
-
 {% block title %}Painel da TI{% endblock %}
-
 {% block content %}
 <div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-    <h1 style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;">
-        💻 Central de Configurações - TI
-    </h1>
+    <h1 style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;">💻 Central de Configurações - TI</h1>
     <p style="color: #64748b; font-size: 1.1rem;">Gerenciamento completo do sistema</p>
 </div>
-
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-    <!-- Card Equipamentos -->
     <a href="{{ url_for('ti_equipamentos') }}" style="text-decoration: none;">
-        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" 
-             onmouseover="this.style.transform='translateY(-10px)'"
-             onmouseout="this.style.transform='translateY(0)'">
-            <div style="text-align: center; padding: 2rem;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">🏭</div>
-                <h2 style="color: var(--primary); margin-bottom: 1rem;">Equipamentos</h2>
-                <p style="color: #64748b;">Gerencie equipamentos e sensores</p>
-            </div>
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">🏭</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Equipamentos</h2><p style="color: #64748b;">Gerencie equipamentos</p></div>
         </div>
     </a>
-
-    <!-- Card Usuários -->
+    <a href="{{ url_for('ti_sensores') }}" style="text-decoration: none;">
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">🌡️</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Sensores</h2><p style="color: #64748b;">Gerencie sensores</p></div>
+        </div>
+    </a>
     <a href="{{ url_for('gerenciar_usuarios') }}" style="text-decoration: none;">
-        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;"
-             onmouseover="this.style.transform='translateY(-10px)'"
-             onmouseout="this.style.transform='translateY(0)'">
-            <div style="text-align: center; padding: 2rem;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">👥</div>
-                <h2 style="color: var(--primary); margin-bottom: 1rem;">Usuários</h2>
-                <p style="color: #64748b;">Criar e gerenciar usuários</p>
-            </div>
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">👥</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Usuários</h2><p style="color: #64748b;">Criar e gerenciar usuários</p></div>
         </div>
     </a>
-
-    <!-- Card Grupos -->
     <a href="{{ url_for('gerenciar_grupos') }}" style="text-decoration: none;">
-        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;"
-             onmouseover="this.style.transform='translateY(-10px)'"
-             onmouseout="this.style.transform='translateY(0)'">
-            <div style="text-align: center; padding: 2rem;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div>
-                <h2 style="color: var(--primary); margin-bottom: 1rem;">Grupos</h2>
-                <p style="color: #64748b;">Gerenciar grupos de permissões</p>
-            </div>
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Grupos</h2><p style="color: #64748b;">Gerenciar grupos de permissões</p></div>
         </div>
     </a>
-
-    <!-- Card Relatórios -->
     <a href="{{ url_for('gerenciar_relatorios') }}" style="text-decoration: none;">
-        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;"
-             onmouseover="this.style.transform='translateY(-10px)'"
-             onmouseout="this.style.transform='translateY(0)'">
-            <div style="text-align: center; padding: 2rem;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">📊</div>
-                <h2 style="color: var(--primary); margin-bottom: 1rem;">Relatórios</h2>
-                <p style="color: #64748b;">Configurar relatórios personalizados</p>
-            </div>
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">📊</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Relatórios</h2><p style="color: #64748b;">Configurar relatórios</p></div>
         </div>
     </a>
-</div>
-
-<!-- Atalhos Rápidos -->
-<div class="card" style="margin-top: 2rem;">
-    <h2 class="card-title">⚡ Ações Rápidas</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-        <button onclick="window.location.href='{{ url_for('ti_equipamentos') }}'" class="btn btn-success" style="padding: 1rem;">
-            ➕ Novo Equipamento
-        </button>
-        <button onclick="window.location.href='{{ url_for('gerenciar_usuarios') }}'" class="btn btn-success" style="padding: 1rem;">
-            ➕ Novo Usuário
-        </button>
-        <button onclick="window.location.href='{{ url_for('gerenciar_grupos') }}'" class="btn btn-success" style="padding: 1rem;">
-            ➕ Novo Grupo
-        </button>
-        <button onclick="window.location.href='{{ url_for('gerenciar_relatorios') }}'" class="btn btn-success" style="padding: 1rem;">
-            ➕ Novo Relatório
-        </button>
-    </div>
+    <a href="{{ url_for('gerenciar_layouts') }}" style="text-decoration: none;">
+        <div class="card" style="margin: 0; cursor: pointer; transition: all 0.3s; height: 100%;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="text-align: center; padding: 2rem;"><div style="font-size: 5rem; margin-bottom: 1rem;">🎨</div><h2 style="color: var(--primary); margin-bottom: 1rem;">Layouts</h2><p style="color: #64748b;">Configurar layouts</p></div>
+        </div>
+    </a>
 </div>
 {% endblock %}

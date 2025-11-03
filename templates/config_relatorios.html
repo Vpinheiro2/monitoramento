@@ -1,31 +1,17 @@
 {% extends "base.html" %}
-
 {% block title %}Configuração de Relatórios{% endblock %}
-
 {% block content %}
 <div class="page-header" style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">
-        📊 Configuração de Relatórios
-    </h1>
-    <p style="color: #64748b;">
-        <a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar para TI</a>
-    </p>
+    <h1 style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;">📊 Configuração de Relatórios</h1>
+    <p style="color: #64748b;"><a href="{{ url_for('ti') }}" style="color: var(--primary);">← Voltar</a> | <a href="{{ url_for('gerenciar_layouts') }}" style="color: var(--info);">⚙️ Gerenciar Layouts</a></p>
 </div>
-
-<div style="margin-bottom: 2rem;">
-    <button onclick="openAddRelatorioModal()" class="btn btn-success">
-        ➕ Criar Novo Relatório
-    </button>
-</div>
-
+<div style="margin-bottom: 2rem;"><button onclick="openAddRelatorioModal()" class="btn btn-success">➕ Criar Novo Relatório</button></div>
 <div class="card">
     <h2 class="card-title">Relatórios Configurados</h2>
-    
     <table style="width: 100%; border-collapse: collapse;">
         <thead style="background: var(--primary); color: white;">
             <tr>
                 <th style="padding: 1rem; text-align: left;">Nome</th>
-                <th style="padding: 1rem; text-align: left;">Descrição</th>
                 <th style="padding: 1rem; text-align: left;">Tipo</th>
                 <th style="padding: 1rem; text-align: left;">Formatos</th>
                 <th style="padding: 1rem; text-align: left;">Status</th>
@@ -35,35 +21,15 @@
         <tbody>
             {% for id_rel, rel in relatorios.items() %}
             <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 1rem;"><strong>{{ rel.nome }}</strong></td>
-                <td style="padding: 1rem;">{{ rel.descricao }}</td>
-                <td style="padding: 1rem;">
-                    <span class="badge badge-info">{{ rel.tipo | capitalize }}</span>
-                </td>
-                <td style="padding: 1rem;">
-                    {% for formato in rel.formatos %}
-                    <span class="badge badge-secondary">{{ formato }}</span>
-                    {% endfor %}
-                </td>
-                <td style="padding: 1rem;">
-                    {% if rel.ativo %}
-                    <span class="badge badge-success">✅ Ativo</span>
-                    {% else %}
-                    <span class="badge badge-secondary">❌ Inativo</span>
-                    {% endif %}
-                </td>
+                <td style="padding: 1rem;"><strong>{{ rel.nome }}</strong><br><small style="color: #64748b;">{{ rel.descricao }}</small></td>
+                <td style="padding: 1rem;"><span class="badge badge-info">{{ rel.tipo | capitalize }}</span></td>
+                <td style="padding: 1rem;">{% for formato in rel.formatos %}<span class="badge badge-secondary">{{ formato }}</span> {% endfor %}</td>
+                <td style="padding: 1rem;">{% if rel.ativo %}<span class="badge badge-success">✅ Ativo</span>{% else %}<span class="badge badge-secondary">❌ Inativo</span>{% endif %}</td>
                 <td style="padding: 1rem;">
                     <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="editRelatorio('{{ id_rel }}')" class="btn btn-primary" style="padding: 0.5rem 0.75rem;">
-                            ✏️
-                        </button>
-                        <form method="POST" style="display: inline;">
-                            <input type="hidden" name="acao" value="ativar_desativar">
-                            <input type="hidden" name="id_relatorio" value="{{ id_rel }}">
-                            <button type="submit" class="btn btn-warning" style="padding: 0.5rem 0.75rem;">
-                                {% if rel.ativo %}🔒{% else %}🔓{% endif %}
-                            </button>
-                        </form>
+                        <button onclick="editRelatorio('{{ id_rel }}')" class="btn btn-primary" style="padding: 0.5rem 0.75rem;">✏️</button>
+                        <form method="POST" style="display: inline;"><input type="hidden" name="acao" value="ativar_desativar"><input type="hidden" name="id_relatorio" value="{{ id_rel }}"><button type="submit" class="btn btn-warning" style="padding: 0.5rem 0.75rem;">{% if rel.ativo %}🔒{% else %}🔓{% endif %}</button></form>
+                        <form method="POST" style="display: inline;"><input type="hidden" name="acao" value="excluir"><input type="hidden" name="id_relatorio" value="{{ id_rel }}"><button type="submit" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="return confirm('Confirma?')">🗑️</button></form>
                     </div>
                 </td>
             </tr>
@@ -71,326 +37,57 @@
         </tbody>
     </table>
 </div>
-
-<!-- Modal Adicionar/Editar Relatório -->
 <div id="relatorioModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 700px; width: 95%; margin: 2rem auto;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 900px; width: 95%; margin: 2rem auto; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 id="relatorioModalTitle" style="font-size: 1.5rem; color: var(--primary); margin: 0;">➕ Criar Relatório</h2>
             <span onclick="closeRelatorioModal()" style="font-size: 2rem; cursor: pointer; color: #94a3b8;">&times;</span>
         </div>
-        
         <form method="POST">
             <input type="hidden" name="acao" id="relAcao" value="adicionar">
             <input type="hidden" name="id_relatorio" id="relId">
-            
-            <div class="form-group">
-                <label class="form-label">ID do Relatório * <small style="color: #64748b;">(sem espaços)</small></label>
-                <input type="text" name="id_relatorio" id="relIdInput" class="form-control" 
-                       placeholder="ex: vendas_mensais" required>
+            <div class="form-group"><label class="form-label">ID *</label><input type="text" name="id_relatorio" id="relIdInput" class="form-control" required></div>
+            <div class="form-group"><label class="form-label">Nome *</label><input type="text" name="nome" id="relNome" class="form-control" required></div>
+            <div class="form-group"><label class="form-label">Descrição</label><textarea name="descricao" id="relDescricao" class="form-control" rows="2"></textarea></div>
+            <div class="form-group"><label class="form-label">Tipo *</label><select name="tipo" id="relTipo" class="form-control" required><option value="">Selecione...</option><option value="processos">Processos</option><option value="equipamentos">Equipamentos</option></select></div>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">📋 Campos *</label>
+            <div style="max-height: 300px; overflow-y: auto; background: white; padding: 1rem; border-radius: 8px;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="equipamento">Equipamento</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="produto">Produto</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="ordem_producao">Ordem Produção</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="responsavel">Responsável</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="data_finalizacao">Data Finalização</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;"><input type="checkbox" name="campos" value="status_qualidade">Status Qualidade</label>
+            </div></div>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">Formatos *</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="excel">📊 Excel</label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;"><input type="checkbox" name="formatos" value="pdf">📕 PDF</label>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Nome do Relatório *</label>
-                <input type="text" name="nome" id="relNome" class="form-control" 
-                       placeholder="Ex: Vendas Mensais" required>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;"><label class="form-label">Layouts</label>
+                <div class="form-group"><label>Layout Excel</label><select name="layout_excel" id="relLayoutExcel" class="form-control"><option value="">Nenhum</option>{% for id, layout in layouts.items() %}{% if layout.tipo == 'excel' %}<option value="{{ id }}">{{ layout.nome }}</option>{% endif %}{% endfor %}</select></div>
+                <div class="form-group"><label>Layout PDF</label><select name="layout_pdf" id="relLayoutPdf" class="form-control"><option value="">Nenhum</option>{% for id, layout in layouts.items() %}{% if layout.tipo == 'pdf' %}<option value="{{ id }}">{{ layout.nome }}</option>{% endif %}{% endfor %}</select></div>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Descrição</label>
-                <textarea name="descricao" id="relDescricao" class="form-control" rows="2" 
-                          placeholder="Descrição breve do relatório"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Tipo *</label>
-                <select name="tipo" id="relTipo" class="form-control" required>
-                    <option value="">Selecione...</option>
-                    <option value="processos">Processos</option>
-                    <option value="equipamentos">Equipamentos</option>
-                    <option value="manutencao">Manutenção</option>
-                    <option value="qualidade">Qualidade</option>
-                </select>
-            </div>
-
-            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
-                <label class="form-label" style="font-size: 1.1rem; margin-bottom: 1rem;">📋 Campos do Relatório * <small style="color: #64748b;">(selecione os dados que deseja exibir)</small></label>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.75rem; background: white; padding: 1rem; border-radius: 8px; max-height: 400px; overflow-y: auto;">
-                    
-                    <!-- DADOS DO PROCESSO -->
-                    <div style="grid-column: 1 / -1; background: #e0f2fe; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #0369a1;">
-                        📦 Dados do Processo
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="id_processo">
-                        <span>🔢 ID do Processo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="equipamento">
-                        <span>🏭 Equipamento</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="equipamento_id">
-                        <span>🔢 ID do Equipamento</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="tipo_equipamento">
-                        <span>🏷️ Tipo de Equipamento</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="localizacao_equipamento">
-                        <span>📍 Localização do Equipamento</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="produto">
-                        <span>📦 Produto/Tipo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="ordem_producao">
-                        <span>📋 Ordem de Produção</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="lote">
-                        <span>🏷️ Lote</span>
-                    </label>
-                    
-                    <!-- DADOS DE TEMPO -->
-                    <div style="grid-column: 1 / -1; background: #fef3c7; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #92400e; margin-top: 0.5rem;">
-                        ⏰ Datas e Horários
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="data_inicio">
-                        <span>📅 Data de Início</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="hora_inicio">
-                        <span>🕐 Hora de Início</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="data_finalizacao">
-                        <span>📅 Data de Finalização</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="hora_finalizacao">
-                        <span>🕐 Hora de Finalização</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="duracao_processo">
-                        <span>⏱️ Duração do Processo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="carregado_as">
-                        <span>🕐 Carregado às</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="tempo_total">
-                        <span>⏳ Tempo Total</span>
-                    </label>
-                    
-                    <!-- DADOS DE USUÁRIO -->
-                    <div style="grid-column: 1 / -1; background: #dbeafe; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #1e40af; margin-top: 0.5rem;">
-                        👥 Usuários e Responsáveis
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="responsavel">
-                        <span>👤 Responsável pelo Processo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="usuario_inicio">
-                        <span>👤 Usuário que Iniciou</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="usuario_finalizacao">
-                        <span>👤 Usuário que Finalizou</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="analisado_por">
-                        <span>👤 Analisado por (Qualidade)</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="turno">
-                        <span>🌓 Turno</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="equipe">
-                        <span>👥 Equipe</span>
-                    </label>
-                    
-                    <!-- QUALIDADE -->
-                    <div style="grid-column: 1 / -1; background: #dcfce7; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #166534; margin-top: 0.5rem;">
-                        🔬 Controle de Qualidade
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="status_qualidade">
-                        <span>✅ Status de Qualidade</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="data_analise">
-                        <span>📅 Data da Análise</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="hora_analise">
-                        <span>🕐 Hora da Análise</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="observacoes_qualidade">
-                        <span>📝 Observações da Qualidade</span>
-                    </label>
-                    
-                    <!-- TEMPERATURA E SENSORES -->
-                    <div style="grid-column: 1 / -1; background: #fee2e2; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #991b1b; margin-top: 0.5rem;">
-                        🌡️ Temperatura e Sensores
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="temperatura_inicial">
-                        <span>🌡️ Temperatura Inicial</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="temperatura_final">
-                        <span>🌡️ Temperatura Final</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="temperatura_media">
-                        <span>🌡️ Temperatura Média</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="temperatura_minima">
-                        <span>🌡️ Temperatura Mínima</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="temperatura_maxima">
-                        <span>🌡️ Temperatura Máxima</span>
-                    </label>
-                    
-                    <!-- OUTROS -->
-                    <div style="grid-column: 1 / -1; background: #f3e8ff; padding: 0.5rem; border-radius: 4px; font-weight: bold; color: #6b21a8; margin-top: 0.5rem;">
-                        📋 Outros Dados
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="status_processo">
-                        <span>📊 Status do Processo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="tipo_processo">
-                        <span>🏷️ Tipo de Processo</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="quantidade">
-                        <span>📊 Quantidade</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="unidade_medida">
-                        <span>📏 Unidade de Medida</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="observacoes">
-                        <span>📝 Observações</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="prioridade">
-                        <span>⭐ Prioridade</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="cliente">
-                        <span>🏢 Cliente</span>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="campos" value="pedido">
-                        <span>📋 Pedido</span>
-                    </label>
-                </div>
-                
-                <div style="margin-top: 1rem; padding: 0.75rem; background: #e0f2fe; border-radius: 6px; font-size: 0.9rem; color: #0369a1;">
-                    💡 <strong>Dica:</strong> Selecione apenas os campos que deseja exibir no relatório. Campos não selecionados não aparecerão.
-                </div>
-            </div>
-
-            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <label class="form-label">Formatos de Exportação *</label>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="formatos" value="excel">
-                        <span>📊 Excel (.xlsx)</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="formatos" value="pdf">
-                        <span>📕 PDF</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="formatos" value="csv">
-                        <span>📋 CSV</span>
-                    </label>
-                </div>
-            </div>
-
             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                <button type="button" onclick="closeRelatorioModal()" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-                <button type="submit" class="btn btn-success">
-                    ✅ Criar Relatório
-                </button>
+                <button type="button" onclick="closeRelatorioModal()" class="btn btn-secondary">❌ Cancelar</button>
+                <button type="submit" class="btn btn-success">✅ Criar</button>
             </div>
         </form>
     </div>
 </div>
-
 <script>
 const relatoriosData = {{ relatorios | tojson | safe }};
-
 function openAddRelatorioModal() {
-    document.getElementById('relatorioModalTitle').textContent = '➕ Criar Novo Relatório';
+    document.getElementById('relatorioModalTitle').textContent = '➕ Criar Relatório';
     document.getElementById('relAcao').value = 'adicionar';
     document.getElementById('relIdInput').readOnly = false;
-    // Limpar form
     document.getElementById('relIdInput').value = '';
     document.getElementById('relNome').value = '';
     document.getElementById('relDescricao').value = '';
     document.getElementById('relTipo').value = '';
+    document.querySelectorAll('input[name="campos"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('input[name="formatos"]').forEach(cb => cb.checked = false);
-    
     document.getElementById('relatorioModal').style.display = 'flex';
 }
-
 function editRelatorio(idRel) {
     const rel = relatoriosData[idRel];
     document.getElementById('relatorioModalTitle').textContent = '✏️ Editar Relatório';
@@ -400,23 +97,13 @@ function editRelatorio(idRel) {
     document.getElementById('relNome').value = rel.nome;
     document.getElementById('relDescricao').value = rel.descricao;
     document.getElementById('relTipo').value = rel.tipo;
-    
-    // Marcar formatos
-    document.querySelectorAll('input[name="formatos"]').forEach(cb => {
-        cb.checked = rel.formatos.includes(cb.value);
-    });
-    
+    document.getElementById('relLayoutExcel').value = rel.layout_excel || '';
+    document.getElementById('relLayoutPdf').value = rel.layout_pdf || '';
+    document.querySelectorAll('input[name="campos"]').forEach(cb => cb.checked = rel.campos.includes(cb.value));
+    document.querySelectorAll('input[name="formatos"]').forEach(cb => cb.checked = rel.formatos.includes(cb.value));
     document.getElementById('relatorioModal').style.display = 'flex';
 }
-
-function closeRelatorioModal() {
-    document.getElementById('relatorioModal').style.display = 'none';
-}
-
-window.onclick = function(event) {
-    if (event.target.id === 'relatorioModal') {
-        closeRelatorioModal();
-    }
-}
+function closeRelatorioModal() { document.getElementById('relatorioModal').style.display = 'none'; }
+window.onclick = function(event) { if (event.target.id === 'relatorioModal') closeRelatorioModal(); }
 </script>
 {% endblock %}
